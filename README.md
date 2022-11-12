@@ -70,9 +70,9 @@ The resulting STLs will be located in the stl-400 subdirectory and the lens.svg 
 
 ### Print parts
 
-1. The flex skirt
+#### The flex skirt
 
-![Skirt model iewed in OpenSCAD](/doc/assets/skirt.png)
+![Skirt model viewed in OpenSCAD](/doc/assets/skirt.png)
 
    - Make sure you have the latest version of the [Formlab slicing software]()
    - import the `skirt.stl` file, click on the MAGIC button to generate supports,
@@ -84,7 +84,9 @@ The resulting STLs will be located in the stl-400 subdirectory and the lens.svg 
      dimensional and elastic stability of the parts produced here so, be ready
      to print more than once.
 
-2. The shell
+#### The shell
+
+![Skirt model viewed in OpenSCAD](/doc/assets/shell.png)
 
 I have printed the shell successfully both on the 
 [SoFAB](https://www.sofab.tv/)'s Formlab resin printer with both 
