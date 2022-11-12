@@ -104,6 +104,8 @@ slicer so that the supports are not created on the side of the shell that will b
 in contact with the flex skirt (this will make it more likely your goggles do
 not let water in).
 
+![Shell model oriented correctly in Prusa Slicer](/doc/assets/shell-prusa.png)
+
 #### Other parts
 
 ![Lens clip model viewed in OpenSCAD](/doc/assets/lens-clip.png)
