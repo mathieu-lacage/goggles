@@ -57,9 +57,11 @@ hardware from my local FabLab, [SoFAB](https://www.sofab.tv/).
 It is is easy to [download](https://github.com/mathieu-lacage/goggles/releases/download/v0.1/goggles-0.1.zip) 
 all the STLs and SVGs from the project release page.
 
-It is also possible to rebuild these models from the source Python code:
+It is also possible to rebuild these models from the source Python code after you install 
+[OpenSCAD](https://openscad.org/) and [SolidPython](https://github.com/SolidCode/SolidPython/):
 
 ```
+$ sudo dnf install -y openscad
 $ pip install SolidPython
 $ ./goggles.py -r 400 -e
 ```
@@ -70,6 +72,8 @@ The resulting STLs will be located in the stl-400 subdirectory and the lens.svg 
 
 1. The flex skirt
 
+![Skirt model iewed in OpenSCAD](/doc/assets/skirt.png)
+
    - Make sure you have the latest version of the [Formlab slicing software]()
    - import the `skirt.stl` file, click on the MAGIC button to generate supports,
      slice the result, and upload the model to your printer
@@ -79,6 +83,31 @@ The resulting STLs will be located in the stl-400 subdirectory and the lens.svg 
      Formlabs datasheets. For some reason, I have observed wide variance in the
      dimensional and elastic stability of the parts produced here so, be ready
      to print more than once.
+
+2. The shell
+
+I have printed the shell successfully both on the 
+[SoFAB](https://www.sofab.tv/)'s Formlab resin printer with both 
+[Draft](https://formlabs.com/materials/standard/#draft-resin) and 
+[Grey Pro](https://formlabs.com/materials/standard/#grey-pro-resin) resin.
+The quality difference between the two resins was not significant for 
+this part.
+
+I also printed a couple of versions with PETG and PLA filaments on
+a [Prusa i3 MK3S](https://www.prusa3d.com/product/original-prusa-i3-mk3s-kit-3/). 
+Functionally, the resulting parts are equivalent but they required extensive
+post-processing to obtain nice-looking surface finishes. If you go down this path,
+I recommend you to choose carefully the part orientation when you drop it in the 
+slicer so that the supports are not created on the side of the shell that will be
+in contact with the flex skirt (this will make it more likely your goggles do
+not let water in).
+
+XXX screenshot
+
+3. Other parts
+
+The lens clip, the lens alignment tool, and, if you decide you need it, the back clip
+can be printed without special care on your printer of choice.
 
 ### Cut lenses
 
