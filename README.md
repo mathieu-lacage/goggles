@@ -127,7 +127,14 @@ parts cut from sheets of 3mm acrylic, that are later glued together.
 ![Lens top and bottom viewed in OpenSCAD](/doc/assets/lens-top-bottom.png)
 
 The `lens.svg` included in the release contains paths that can be loaded into an Origin
-router and cut from Acrylic sheets.
+router and then used to cut acrylic sheets:
+
+1. Cut inside the grey area, at the depth specified on the svg
+2. Cut outsitde the grey area, at the depth of the acrylic sheet thickness minus a
+   small tolerance (say, 3-0.2=2.8mm)
+3. Separate the cut parts from the sheet by gently pushing them to break the 0.2mm
+   connectors
+4. Use a knife and sanding paper to clean gently the sides of the parts
 
 ### Assembly
 
