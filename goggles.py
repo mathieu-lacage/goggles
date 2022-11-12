@@ -1,0 +1,617 @@
+#!/usr/bin/python
+import math
+import collections
+import bisect
+import solid, solid.utils
+import euclid3
+import transformations
+from extrude_along_path import extrude_along_path
+
+import mg2
+
+
+def eu3(path):
+    if len(path) == 0:
+        return []
+    return [euclid3.Point3(p.x, p.y, 0) for p in path]
+
+Point3 = euclid3.Point3
+
+def ellipsis(a, b, t):
+    return euclid3.Point3(a*math.cos(t), b*math.sin(t), 0)
+def ellipsis_perpendicular(a,b,t):
+    p = ellipsis(a,b,t)
+    return euclid3.Point3(p.x/a**2, p.y/b**2)
+
+
+MIN_RESOLUTION = 0.5
+UNIT = 8 
+OTHICKNESS = 1.2
+ITHICKNESS = 0.6
+ATTACHMENT_HOLE_RADIUS = 1
+ELLIPSIS_WIDTH = UNIT*2
+ELLIPSIS_HEIGHT = UNIT*1.3
+
+BACK_CLIP_X = 12
+BACK_CLIP_Y = 21
+BACK_CLIP_THICKNESS = 2
+BACK_CLIP_RADIUS = BACK_CLIP_THICKNESS/2
+
+SILICON_THICKNESS = ITHICKNESS
+SILICON_SQUASHED_THICKNESS = ITHICKNESS
+
+LENS_THICKNESS = 3
+
+XALPHA = 0.95
+YALPHA = XALPHA*0.03
+MAX_HEIGHT = UNIT*3
+MAX_WIDTH = UNIT*2.5
+RING_THICKNESS = OTHICKNESS/2
+#NSTEPS = 100
+NSTEPS = 40
+TOOTH_WIDTH = UNIT/4
+
+
+TOP_ATTACHMENT_WIDTH = 0.05
+BOTTOM_ATTACHMENT_WIDTH = 0.04
+SHELL_BOTTOM_HOLE_WIDTH = 8
+SHELL_BOTTOM_HOLE_HEIGHT = 3
+
+LENS_TOP_HEIGHT=1
+LENS_GROOVE_DEPTH=1
+LENS_BOTTOM_RING_WIDTH=2
+LENS_BOTTOM_RING_HEIGHT=3-OTHICKNESS-SILICON_SQUASHED_THICKNESS
+LENS_INNER_RING_WIDTH=1
+LENS_GROOVE_HEIGHT=3-LENS_TOP_HEIGHT
+
+CLIP_MIN_WIDTH=1
+LENS_THICKNESS=3
+
+LENS_TOP_RING_WIDTH=1
+
+
+SHELL_TOP_Y = -OTHICKNESS
+SHELL_TOP_X = LENS_BOTTOM_RING_WIDTH
+
+
+def distance(alpha, threshold=0.5):
+    d = alpha/threshold if alpha < threshold else (1-alpha)/(1-threshold)
+    d = 1-(1-d)**2
+    return d
+
+def argmin(l, key):
+    if len(l) == 0:
+        return None
+    min_key = key(l[0])
+    min_index = 0
+    for i, item in enumerate(l[1:]):
+        k = key(item)
+        if k < min_key:
+            min_index = i+1
+            min_key = k
+    return min_index
+def ydistance(alpha):
+    def _norm2(v):
+        return math.sqrt(v.x**2+v.y**2)
+    t = 2*math.pi*alpha
+    e = ellipsis(ELLIPSIS_WIDTH, ELLIPSIS_HEIGHT, t)
+    ep = ellipsis_perpendicular(ELLIPSIS_WIDTH, ELLIPSIS_HEIGHT, t)
+    ep = ep / _norm2(ep)
+    p = e + ep * fwidth(alpha)
+    return p.y
+def fwidth(alpha):
+    d = distance(alpha)
+    width = max(OTHICKNESS, MAX_WIDTH*d**7)
+    return width
+def fheight(alpha):
+    d = distance(alpha)
+    height = max(OTHICKNESS, MAX_HEIGHT*d**15)
+    return height
+
+def shell_curve(alpha):
+    width = fwidth(alpha)
+    height = fheight(alpha)
+    path = mg2.Path(x=0, y=0)\
+        .append(dx=width*XALPHA, dy=height*YALPHA)\
+        .append(dx=width*(1-XALPHA), dy=height*(1-YALPHA))\
+        .splinify(n=20)
+    return path
+
+
+def rounded_square(x, y, height, radius, adjust=False):
+    if adjust:
+        x = x - 2*radius
+        y = y - 2*radius
+    r = solid.cylinder(radius, height, segments=40)
+    o = solid.hull()(
+        solid.translate([-x/2, -y/2, 0])(r),
+        solid.translate([x/2, -y/2, 0])(r),
+        solid.translate([-x/2, y/2, 0])(r),
+        solid.translate([x/2, y/2, 0])(r),
+    )
+    return o
+
+def rounded_square2(x, y, height, radius, adjust=False):
+    if adjust:
+        x = x - 2*radius
+        y = y - 2*radius
+        height = height - 2*radius
+    r = solid.sphere(radius, segments=40)
+    o = solid.hull()(
+        solid.translate([-x/2, -y/2, height/2])(r),
+        solid.translate([x/2, -y/2, height/2])(r),
+        solid.translate([-x/2, y/2, height/2])(r),
+        solid.translate([x/2, y/2, height/2])(r),
+        solid.translate([-x/2, -y/2, -height/2])(r),
+        solid.translate([x/2, -y/2, -height/2])(r),
+        solid.translate([-x/2, y/2, -height/2])(r),
+        solid.translate([x/2, y/2, -height/2])(r),
+    )
+    return o
+
+def square_torus(x, y, radius):
+    r = solid.sphere(radius, segments=40)
+    o = solid.hull()(
+        solid.translate([-x/2, -y/2, 0])(r),
+        solid.translate([x/2, -y/2, 0])(r)
+    ) + solid.hull()(
+        solid.translate([-x/2, y/2, 0])(r),
+        solid.translate([x/2, y/2, 0])(r),
+    ) + solid.hull()(
+        solid.translate([x/2, y/2, 0])(r),
+        solid.translate([x/2, -y/2, 0])(r),
+    ) + solid.hull()(
+        solid.translate([-x/2, y/2, 0])(r),
+        solid.translate([-x/2, -y/2, 0])(r),
+    )
+    return o
+
+
+def shell():
+
+    def profile(alpha):
+
+        d = distance(alpha)
+        curve = shell_curve(alpha)
+
+        offset_curve = mg2.Path(path=curve)\
+            .offset(OTHICKNESS, left=False)\
+            .reverse()
+
+        path = mg2.Path(path=curve)\
+            .translate(dx=SHELL_TOP_X)\
+            .label('forward_path_end')\
+            .append(dx=OTHICKNESS)\
+            .append_angle(alpha=-math.pi/2, delta=OTHICKNESS, relative_to='forward_path_end')\
+            .extend(path=offset_curve)\
+            .append(x=SHELL_TOP_X, y=SHELL_TOP_Y)\
+            .append(dx=-LENS_BOTTOM_RING_WIDTH)\
+            .append(dy=OTHICKNESS)
+        return eu3(path.reversed_points)
+
+    def top_attachment_profile(attachment_alpha):
+        if attachment_alpha > 0.5:
+            shell_alpha = 2*TOP_ATTACHMENT_WIDTH*(attachment_alpha-0.5)
+            alpha = (attachment_alpha - 0.5)/0.5
+        else:
+            shell_alpha = 1-TOP_ATTACHMENT_WIDTH+2*TOP_ATTACHMENT_WIDTH*attachment_alpha
+            alpha = (0.5-attachment_alpha)/0.5
+        d = distance(shell_alpha)
+        curve = shell_curve(shell_alpha)
+        top = max(2*UNIT/3*(1-alpha**4), OTHICKNESS)
+        tooth_width = 2.5*TOOTH_WIDTH*(1-alpha**4)
+        epsilon = 0.1
+        p1 = mg2.Path(x=curve.width+SHELL_TOP_X, y=curve.height)\
+            .append(dx=tooth_width, y=-top/2)\
+            .append(y=-top)\
+            .splinify(n=40)\
+            .append(dx=-tooth_width)\
+            .append(dx=-curve.width/2, y=-OTHICKNESS)\
+            .append(dx=-curve.width/2)\
+            .append(dy=OTHICKNESS-epsilon)\
+            .append(dx=curve.width-epsilon)
+        return eu3(p1.reversed_points)
+
+
+    path1 = [ellipsis(ELLIPSIS_WIDTH, ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(2*math.pi/NSTEPS, 2*math.pi, NSTEPS, include_end=False)]
+    o = extrude_along_path(profile, path1, connect_ends=True)
+#    o = solid.debug(o)
+
+    path2 = [ellipsis(ELLIPSIS_WIDTH, ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(-TOP_ATTACHMENT_WIDTH*2*math.pi, TOP_ATTACHMENT_WIDTH*2*math.pi, 40)]
+    top_attachment = extrude_along_path(top_attachment_profile, path2)
+    top_attachment = top_attachment -\
+        solid.translate([ELLIPSIS_WIDTH+SHELL_TOP_X+OTHICKNESS+TOOTH_WIDTH, 0, -10])(
+            rounded_square(1.5*OTHICKNESS, 1.5*OTHICKNESS, 20, OTHICKNESS/2)
+        )
+
+    o = o + top_attachment
+
+    BOTTOM_ATTACHMENT_HEIGHT = 5
+    def bottom_attachment_profile(attachment_alpha):
+        if attachment_alpha > 0.5:
+            shell_alpha = 0.5+2*BOTTOM_ATTACHMENT_WIDTH*(attachment_alpha-0.5)
+            alpha = (attachment_alpha - 0.5)/0.5
+        else:
+            shell_alpha = 0.5-2*BOTTOM_ATTACHMENT_WIDTH*(0.5-attachment_alpha)
+            alpha = (0.5-attachment_alpha)/0.5
+        d = distance(shell_alpha)
+        curve = shell_curve(shell_alpha)
+        handle_width = OTHICKNESS*4*distance(attachment_alpha)**2
+        handle_height = BOTTOM_ATTACHMENT_HEIGHT
+        xalpha = XALPHA
+        yalpha = YALPHA
+        epsilon = 0.4
+        cuts = curve.cut(y=MAX_HEIGHT-handle_height)
+        delta_x = cuts[1].width
+        delta_y = cuts[1].height
+        path = mg2.Path(x=cuts[1].points.first.x+LENS_BOTTOM_RING_WIDTH+OTHICKNESS-epsilon, y=cuts[1].points.first.y)\
+            .append(dx=delta_x, dy=delta_y)\
+            .append(dx=handle_width)\
+            .extend(mg2.Path(x=0, y=0)\
+                .append(dx=-(1-xalpha)*(delta_x+handle_width)*3/4, dy=-(1-yalpha)*delta_y)\
+                .append(dx=-(xalpha)*(delta_x+handle_width)*3/4, dy=-(yalpha)*delta_y)\
+                .splinify()\
+            )
+        return eu3(path.reversed_points)
+        
+    path3 = [ellipsis(ELLIPSIS_WIDTH, ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(math.pi-BOTTOM_ATTACHMENT_WIDTH*2*math.pi, math.pi+BOTTOM_ATTACHMENT_WIDTH*2*math.pi, 40)]
+    bottom_attachment = extrude_along_path(bottom_attachment_profile, path3)
+
+    bah = rounded_square(SHELL_BOTTOM_HOLE_HEIGHT, SHELL_BOTTOM_HOLE_WIDTH, 20, OTHICKNESS/2)
+    c = shell_curve(0.5)
+    bah1 = solid.translate([-ELLIPSIS_WIDTH-c.width-SHELL_TOP_X-OTHICKNESS/2, 0, ELLIPSIS_HEIGHT-3])(bah)
+    bottom_attachment = bottom_attachment - bah1
+    bah2 = solid.translate([-ELLIPSIS_WIDTH-c.width-SHELL_TOP_X-OTHICKNESS - 10, 0, c.height-BOTTOM_ATTACHMENT_HEIGHT])(
+        solid.rotate([0, 90, 0])(bah)
+    )
+    bottom_attachment = bottom_attachment - bah2
+    o = o + bottom_attachment
+
+    # water filling holes
+    for y in [1, -1]:
+        o = o - solid.translate([-ELLIPSIS_WIDTH-MAX_WIDTH/2, y*1.2*UNIT, -50])(
+            solid.scale([2, 1, 1])(
+                solid.cylinder(1.5*UNIT/7, 100, segments=30)
+            )
+        )
+
+    # flip for final rendering
+    o = solid.mirror([0, 1, 0])(o)
+
+    return o
+
+
+def skirt():
+    def skirt_profile(alpha):
+        SILICON_SKIRT_HEIGHT = 0.75*UNIT
+        SILICON_SKIRT_THICKNESS = 4*OTHICKNESS
+        epsilon = 0.1
+        s = mg2.Path(x=0, y=0)\
+            .append(dx=-OTHICKNESS*3,dy=2*OTHICKNESS)\
+            .append(dx=OTHICKNESS*2,dy=SILICON_SKIRT_HEIGHT/2)\
+            .append(dx=OTHICKNESS*3,dy=SILICON_SKIRT_HEIGHT/2)\
+            .append(dx=-2*OTHICKNESS)\
+            .append(dx=-SILICON_SKIRT_THICKNESS, dy=-SILICON_SKIRT_HEIGHT)\
+            .rotate(alpha=0.5*distance(alpha)**12)\
+            .append(x=(-OTHICKNESS)-SILICON_THICKNESS, y=-SILICON_THICKNESS)\
+            .splinify()
+        return eu3(s.points)
+
+    def _profile(alpha):
+        curve = shell_curve(alpha)
+        path = mg2.Path(path=curve)\
+            .translate(SHELL_TOP_X, 0)\
+            .append(dx=OTHICKNESS)\
+            .append(dy=SILICON_THICKNESS)\
+            .append(dx=-OTHICKNESS-SILICON_THICKNESS)
+
+        delta = mg2.Point(x=SHELL_TOP_X, y=SILICON_THICKNESS) - path.points.last
+        return_path = mg2.Path(x=0, y=0)\
+            .append(dx=(1-XALPHA+0.05)*delta.x, dy=(1-YALPHA)*delta.y) \
+            .append(x=delta.x, y=delta.y) \
+            .splinify()
+        path = path.extend(path=return_path)\
+            .append(dx=-LENS_BOTTOM_RING_WIDTH)\
+            .append(dx=-SILICON_THICKNESS)\
+            .append(dy=-SILICON_THICKNESS-OTHICKNESS)\
+            .extend(path=mg2.Path(x=0, y=0)\
+                .append(dx=SILICON_THICKNESS,dy=-SILICON_THICKNESS/2)\
+                .append(dx=SILICON_THICKNESS/2, dy=SILICON_THICKNESS/2)\
+                .append(dx=-SILICON_THICKNESS/2)\
+                .splinify()
+            )\
+            .append(dy=OTHICKNESS)
+        return eu3(path.points)
+
+    path = [ellipsis(ELLIPSIS_WIDTH, ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(2*math.pi/NSTEPS, 2*math.pi, NSTEPS, include_end=False)]
+    o = extrude_along_path(_profile, path, connect_ends=True)
+
+
+    epsilon = SILICON_THICKNESS/10
+    n = len(path)
+    normals = [ellipsis_perpendicular(ELLIPSIS_WIDTH, ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(2*math.pi/NSTEPS, 2*math.pi, NSTEPS, include_end=False)]
+    skirt_path = [
+        Point3(x=p.x, y=p.y, z=fheight(float(i)/(n-1))+SILICON_THICKNESS-epsilon)+normal/mg2.norm2(normal)*(SHELL_TOP_X+OTHICKNESS+fwidth(float(i)/(n-1)))
+        for i, (p, normal) in enumerate(zip(path, normals))
+    ]
+    o = solid.color("grey")(o) + solid.color("yellow")(extrude_along_path(skirt_profile, skirt_path, connect_ends=True))
+#    for p in skirt_path:
+#        o = o + solid.translate(p)(solid.sphere(1))
+    o = solid.mirror([0, 1, 0])(o)
+    o = solid.translate([0, 0, 0])(o)
+#    o = solid.color("grey")(o)
+    #o = solid.debug(o)
+    return o
+
+def ring(height, delta):
+    path = [ellipsis(ELLIPSIS_WIDTH+delta, ELLIPSIS_HEIGHT+delta, t) for t in solid.utils.frange(0, 2*math.pi, NSTEPS, include_end=True)]
+    o = solid.linear_extrude(height)(
+        solid.polygon(path)
+    )
+    return o
+
+
+def generate_lens_svg():
+    import cairo
+    kerf = 0.1
+    laser = 0.01
+    spacing = ELLIPSIS_WIDTH/3
+
+    def half_lens(context, delta1, delta2, depth):
+        context.save()
+        context.translate(-ELLIPSIS_WIDTH, -ELLIPSIS_HEIGHT)
+        context.arc(0, 0, 0.5, 0, 2*math.pi)
+        context.set_source_rgba(0.5, 0.5, 0.5, 1)
+        context.fill()
+        context.restore()
+
+        context.save()
+        context.scale(ELLIPSIS_WIDTH+delta1, ELLIPSIS_HEIGHT+delta1)
+        context.arc(0, 0, 1, 0, 2*math.pi)
+        context.set_source_rgba(0.5, 0.5, 0.5, 1)
+        context.fill()
+        context.restore()
+
+        context.save()
+        context.save()
+        context.scale(ELLIPSIS_WIDTH+delta1+kerf/2, ELLIPSIS_HEIGHT+delta1+kerf/2)
+        context.arc(0, 0, 1, 0, 2*math.pi)
+        context.restore()
+        context.set_source_rgba(1, 0, 0, 1)
+        context.set_line_width(laser)
+        context.stroke()
+        context.restore()
+
+        context.save()
+        context.scale(ELLIPSIS_WIDTH+delta2, ELLIPSIS_HEIGHT+delta2)
+        context.arc(0, 0, 1, 0, 2*math.pi)
+        context.set_source_rgba(1, 1, 1, 1)
+        context.fill()
+        context.restore()
+
+        context.save()
+        context.translate(-ELLIPSIS_WIDTH/2, 0)
+        context.set_source_rgb(0, 0, 1)
+        context.set_font_size(2)
+        context.show_text("depth cut=%.02fmm" % depth)
+        context.restore()
+
+    with cairo.SVGSurface("lens.svg", ELLIPSIS_WIDTH*6, ELLIPSIS_HEIGHT*6) as surface:
+        surface.set_document_unit(cairo.SVGUnit.MM)
+        context = cairo.Context(surface)
+
+        context.save()
+        context.translate(ELLIPSIS_WIDTH+spacing, ELLIPSIS_HEIGHT+spacing)
+        half_lens(context, 0, -LENS_GROOVE_DEPTH, LENS_GROOVE_HEIGHT)
+        context.restore()
+
+        context.save()
+        context.translate(ELLIPSIS_WIDTH*3+spacing*2, ELLIPSIS_HEIGHT+spacing)
+        half_lens(context, LENS_BOTTOM_RING_WIDTH*2/3, 0, OTHICKNESS+SILICON_SQUASHED_THICKNESS)
+        context.restore()
+
+
+
+def lens_alignment():
+    bottom_width = LENS_BOTTOM_RING_WIDTH*2/3
+    profile = mg2.Path(x=bottom_width, y=0)\
+        .label("start") \
+        .append(dy=LENS_BOTTOM_RING_HEIGHT)\
+        .append(dx=-bottom_width, dy=OTHICKNESS+SILICON_SQUASHED_THICKNESS+LENS_GROOVE_HEIGHT)\
+        .append(dy=LENS_TOP_HEIGHT)\
+        .append(dx=bottom_width+1)\
+        .append(dy=0, dx=1, relative_to="start")
+    path = [ellipsis(ELLIPSIS_WIDTH, ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(2*math.pi/NSTEPS, 2*math.pi, NSTEPS, include_end=False)]
+    o = extrude_along_path(eu3(profile.reversed_points), path, connect_ends=True)
+    return o
+
+
+def lens():
+    #
+    #           A------------------
+    #           |      top
+    #           B---C  ----
+    #               |  m2
+    #  -------  E---D  -----
+    #   shell | |
+    #  -------  |
+    #  -------  |      m1
+    #  silicon| |
+    #  -------  |
+    #  G--------F      ------
+    #  |               bottom
+    #  H---------------------------
+    #
+    #  AB=LENS_TOP_HEIGHT (1)
+    #  CD=LENS_GROOVE_HEIGHT (1)
+    #  BC=DE=LENS_GROOVE_DEPTH (1)
+    #  EF=OTHICKNESS+SILICON_SQUASHED_THICKNESS
+    #  GF=LENS_BOTTOM_RING_WIDTH*2/3 (2*2/3)
+    #  GH=LENS_BOTTOM_RING_HEIGHT (1)
+    #  Total height: 1+1+1.2+0.4+1=4.6 ??
+
+
+    epsilon = 0.01
+    bottom = ring(LENS_BOTTOM_RING_HEIGHT, LENS_BOTTOM_RING_WIDTH*2/3)
+    m1 = ring(OTHICKNESS+SILICON_SQUASHED_THICKNESS+epsilon, -SILICON_THICKNESS) 
+    m2 = ring(LENS_GROOVE_HEIGHT+epsilon*2, -LENS_GROOVE_DEPTH)
+    top = ring(LENS_TOP_HEIGHT, 0)
+
+    l = bottom + \
+        solid.translate([0, 0, LENS_BOTTOM_RING_HEIGHT-epsilon])(m1) + \
+        solid.translate([0, 0, LENS_BOTTOM_RING_HEIGHT+OTHICKNESS+SILICON_SQUASHED_THICKNESS-epsilon])(m2) + \
+        solid.translate([0, 0, LENS_BOTTOM_RING_HEIGHT+OTHICKNESS+SILICON_SQUASHED_THICKNESS+LENS_GROOVE_HEIGHT])(top)
+
+    l = solid.mirror([0, 0, 1])(l)
+    l = solid.translate([0, 0, LENS_BOTTOM_RING_HEIGHT+SILICON_SQUASHED_THICKNESS])(l)
+    l = solid.color("yellow", 0.7)(l)
+    return l
+
+def lens_clip(height, thickness, alpha):
+    a = ring(height, thickness)
+    b = ring(height+2, -LENS_GROOVE_DEPTH)
+    b = solid.translate([0, 0, -1])(b)
+    c = solid.cube([200, 200, 200], center=True)
+    c = solid.translate([0, 100, 0])(c)
+    d = solid.rotate([0, 0, 360*alpha/2/(2*math.pi)])(c)
+    e = solid.rotate([0, 0, -360*alpha/2/(2*math.pi)])(c)
+    f = d - e
+    o = a - b - f
+    o = solid.mirror([1, 0, 0])(o)
+    o = solid.translate([0, 0, -height-OTHICKNESS])(o)
+    return o
+
+def clip():
+    profile = mg2.Path(x=SHELL_TOP_X, y=SHELL_TOP_Y)\
+        .label("start")\
+        .extend(
+            mg2.Path(x=0, y=0)\
+            .append(dx=-LENS_BOTTOM_RING_WIDTH*0.4, dy=(LENS_TOP_HEIGHT+LENS_GROOVE_HEIGHT)*0.8)\
+            .append(dx=-LENS_BOTTOM_RING_WIDTH*0.6, dy=(LENS_TOP_HEIGHT+LENS_GROOVE_HEIGHT)*0.2)\
+            .splinify()
+        )\
+        .append(dy=-LENS_TOP_HEIGHT)\
+        .append(dx=-LENS_GROOVE_DEPTH)\
+        .append(dy=-LENS_GROOVE_HEIGHT)\
+        .append(dx=LENS_GROOVE_DEPTH)\
+        .append(dx=0,dy=0,relative_to="start")
+    path = [ellipsis(ELLIPSIS_WIDTH, ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(2*math.pi/NSTEPS, 2*math.pi, NSTEPS, include_end=False)]
+    o = extrude_along_path(eu3(profile.points), path, connect_ends=True)
+    cut = solid.cube([(ELLIPSIS_WIDTH+10)*2, 40, 40], center=True)
+    cut = solid.translate([0, -20, 0])(cut)
+    #cut = solid.debug(cut)
+    o = o - cut
+    o = solid.mirror([0, 0, 1])(o)
+    o = solid.translate([0, 0, -OTHICKNESS-OTHICKNESS])(o)
+    #o = solid.translate([0, 0, -LENS_GROOVE_HEIGHT])(o)
+    return o
+
+
+def back_clip1():
+    o = rounded_square2(BACK_CLIP_X, BACK_CLIP_Y, BACK_CLIP_THICKNESS, BACK_CLIP_RADIUS, adjust=True)
+    a = square_torus(BACK_CLIP_X-BACK_CLIP_THICKNESS*2, BACK_CLIP_THICKNESS*3/2, BACK_CLIP_RADIUS)
+    b = solid.cube([BACK_CLIP_X-BACK_CLIP_THICKNESS*2, BACK_CLIP_THICKNESS*3/2, BACK_CLIP_THICKNESS], center=True)
+    a = solid.intersection()([a, b])
+    for i in [-BACK_CLIP_Y/4-BACK_CLIP_THICKNESS, -3*BACK_CLIP_THICKNESS/2, 3*BACK_CLIP_THICKNESS/2, BACK_CLIP_Y/4+BACK_CLIP_THICKNESS]:
+        tr = [0, i, 0]
+        o = o - solid.translate(tr)(b) + solid.translate(tr)(a)
+    return o
+
+def back_clip2():
+    o = rounded_square2(BACK_CLIP_X, BACK_CLIP_Y, BACK_CLIP_THICKNESS, BACK_CLIP_RADIUS, adjust=True)
+    a = rounded_square(BACK_CLIP_X-BACK_CLIP_THICKNESS*2, BACK_CLIP_THICKNESS, 100, BACK_CLIP_RADIUS, adjust=True)
+    a = solid.translate([0, 0, -50])(a)
+    for i in [-BACK_CLIP_Y/4-BACK_CLIP_THICKNESS, -3*BACK_CLIP_THICKNESS/2, 3*BACK_CLIP_THICKNESS/2, BACK_CLIP_Y/4+BACK_CLIP_THICKNESS]:
+        b = solid.translate([0, i, 0])(a)
+        o = o - b
+    return o
+
+
+def main():
+    global NSTEPS
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-r', '--resolution', default=40, type=int)
+    parser.add_argument('-e', '--export', action='store_true')
+    parser.add_argument('--slice-h', default=None, type=float)
+    parser.add_argument('--slice-v', default=None, type=float)
+    args = parser.parse_args()
+
+    NSTEPS = args.resolution
+    sh = shell()
+    sk = skirt()
+    l = lens()
+    la = lens_alignment() + l
+
+    lc = lens_clip(LENS_GROOVE_HEIGHT, 2, math.pi/4)
+    bc1 = back_clip1()
+    bc2 = back_clip2()
+
+    output = sk + sh + l + lc
+    if args.slice_v is not None or args.slice_h is not None:
+        if args.slice_v is not None:
+            cut = solid.rotate([0,0,args.slice_v])(solid.translate([-100,0,-100])(solid.cube([200,200,200])))
+        else:
+            cut = solid.cube([0,0,0])
+        if args.slice_h is not None:
+            cut = cut + solid.translate([-100,-50,args.slice_h])(solid.cube([200,200,200]))
+        lc = lc - cut
+        sh = sh - cut
+        sk = sk - cut
+        l = l - cut
+        la = la - cut
+        output = output - cut
+    solid.scad_render_to_file(output, 'goggles.scad')
+    solid.scad_render_to_file(lc, 'lens-clip.scad')
+    solid.scad_render_to_file(sh, 'shell.scad')
+    solid.scad_render_to_file(sk, 'skirt.scad')
+    solid.scad_render_to_file(l, 'lens.scad')
+    solid.scad_render_to_file(la, 'lens-alignment.scad')
+    solid.scad_render_to_file(bc1, 'back-clip1.scad')
+    solid.scad_render_to_file(bc2, 'back-clip2.scad')
+
+    def export(name, type):
+        import subprocess
+        import os
+        try:
+            os.mkdir('%s-%s' % (type, args.resolution))
+        except:
+            pass
+        subprocess.check_output(['/usr/bin/openscad', '-o', '%s-%s/%s.%s' % (type, args.resolution, name, type), '%s.scad' % name])
+
+    if args.export:
+        export('shell', 'stl')
+        export('skirt', 'stl')
+        export('lens', 'stl')
+        export('clip', 'stl')
+        export('lens-alignment', 'stl')
+        export('back-clip1', 'stl')
+        export('back-clip2', 'stl')
+
+    generate_lens_svg()
+
+def main2():
+    import subprocess
+    global NSTEPS
+
+    NSTEPS = 400
+
+    for i in [0, -0.1, -0.2, -0.3, -0.4, -0.5, -0.6, -0.7]:
+        l = lens(i)
+        solid.scad_render_to_file(l, 'lens.scad')
+        subprocess.check_output(['/usr/bin/openscad', '-o', 'lens-variants/%s.stl' % abs(i), 'lens.scad'])
+
+
+def main3():
+    import subprocess
+    global NSTEPS
+
+    NSTEPS = 400
+
+    for i in [0, 0.1, 0.2, 0.3, 0.4, 0.5]:
+        c = clip3(LENS_GROOVE_HEIGHT-i, 3, math.pi/4)
+        solid.scad_render_to_file(c, 'clip.scad')
+        subprocess.check_output(['/usr/bin/openscad', '-o', 'clip-variants/%s.stl' % i, 'clip.scad'])
+
+
+main()
