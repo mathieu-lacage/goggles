@@ -24,12 +24,27 @@ def ellipsis_perpendicular(a,b,t):
     return euclid3.Point3(p.x/a**2, p.y/b**2)
 
 
+# Constants you DO NOT WANT TO CHANGE
+
+# the resolution of the resulting model. Use the command-line
+# to override this value
 NSTEPS = 40
-UNIT = 8 
+# Some kind of scale-invariant length used a bit everywhere to define 
+# other dimensions. Do not change this value. Instead, change the other
+# variables
+UNIT = 8
+# The thickness of the outer shell. This value appears to be
+# good enough for a wide range of material (PETG, PLA, and resin).
+# I have never felt the need to change this value.
 SHELL_THICKNESS = 1.2
+
+# This should create a lens which covers much of a normal-sized eye.
+# The half-length of the ellipsis for the lens along the horizontal axis
 ELLIPSIS_WIDTH = UNIT*2
+# The half-length of the ellipsis for the lens along the vertical axis
 ELLIPSIS_HEIGHT = UNIT*1.3
 
+# Dimensions for the back clip to attach the goggles with a silicon band.
 BACK_CLIP_X = 12
 BACK_CLIP_Y = 21
 BACK_CLIP_THICKNESS = 2
@@ -47,13 +62,9 @@ SKIRT_THICKNESS = 0.6
 # small than SKIRT_THICKNESS, I have never been able to assemble
 # the skirt with the other pieces.
 SKIRT_SQUASHED_THICKNESS = SKIRT_THICKNESS
+SKIRT_RING_PADDING=0.1
 
-XALPHA = 0.95
-YALPHA = XALPHA*0.03
-MAX_HEIGHT = UNIT*3
-MAX_WIDTH = UNIT*2.5
 TOOTH_WIDTH = UNIT/4
-
 TOP_ATTACHMENT_WIDTH = 0.05
 BOTTOM_ATTACHMENT_WIDTH = 0.04
 SHELL_BOTTOM_HOLE_WIDTH = 8
@@ -68,6 +79,23 @@ LENS_GROOVE_HEIGHT=3-LENS_TOP_HEIGHT
 
 SHELL_TOP_Y = -SHELL_THICKNESS
 SHELL_TOP_X = LENS_BOTTOM_RING_WIDTH
+
+#####################
+# Constants you can change
+
+# Control the shape of the outer shell and inner skirt.
+# Lower XALPHA will make the shape less curvy and will
+# decrease the internal volume of the skirt which will
+# decrease the maximum depth you can dive to.
+XALPHA = 0.95
+YALPHA = XALPHA*0.03
+
+# Control the size of the shell and skirt. Smaller values
+# will decrease the internal volume of the skirt which will 
+# decrease the maximum depth you can dive to. 
+MAX_HEIGHT = UNIT*3
+MAX_WIDTH = UNIT*2.5
+
 
 
 def distance(alpha, threshold=0.5):
@@ -278,7 +306,7 @@ def shell():
 
 
 def skirt():
-    def skirt_profile(alpha):
+    def bottom_skirt_profile(alpha):
         SILICON_SKIRT_HEIGHT = 0.75*UNIT
         SILICON_SKIRT_THICKNESS = 4*SHELL_THICKNESS
         epsilon = 0.1
@@ -301,6 +329,7 @@ def skirt():
             .append(dy=SKIRT_THICKNESS)\
             .append(dx=-SHELL_THICKNESS-SKIRT_THICKNESS)
 
+        skirt_top_thickness=SKIRT_THICKNESS-SKIRT_RING_PADDING
         delta = mg2.Point(x=SHELL_TOP_X, y=SKIRT_THICKNESS) - path.points.last
         return_path = mg2.Path(x=0, y=0)\
             .append(dx=(1-XALPHA+0.05)*delta.x, dy=(1-YALPHA)*delta.y) \
@@ -311,9 +340,9 @@ def skirt():
             .append(dx=-SKIRT_THICKNESS)\
             .append(dy=-SKIRT_THICKNESS-SHELL_THICKNESS)\
             .extend(path=mg2.Path(x=0, y=0)\
-                .append(dx=SKIRT_THICKNESS,dy=-SKIRT_THICKNESS/2)\
-                .append(dx=SKIRT_THICKNESS/2, dy=SKIRT_THICKNESS/2)\
-                .append(dx=-SKIRT_THICKNESS/2)\
+                .append(dx=skirt_top_thickness,dy=-SKIRT_THICKNESS/2)\
+                .append(dx=skirt_top_thickness/2, dy=SKIRT_THICKNESS/2)\
+                .append(dx=-skirt_top_thickness/2)\
                 .splinify()
             )\
             .append(dy=SHELL_THICKNESS)
@@ -330,7 +359,7 @@ def skirt():
         Point3(x=p.x, y=p.y, z=fheight(float(i)/(n-1))+SKIRT_THICKNESS-epsilon)+normal/mg2.norm2(normal)*(SHELL_TOP_X+SHELL_THICKNESS+fwidth(float(i)/(n-1)))
         for i, (p, normal) in enumerate(zip(path, normals))
     ]
-    o = solid.color("grey")(o) + solid.color("yellow")(extrude_along_path(skirt_profile, skirt_path, connect_ends=True))
+    o = solid.color("grey")(o) + solid.color("yellow")(extrude_along_path(bottom_skirt_profile, skirt_path, connect_ends=True))
 #    for p in skirt_path:
 #        o = o + solid.translate(p)(solid.sphere(1))
     o = solid.mirror([0, 1, 0])(o)
