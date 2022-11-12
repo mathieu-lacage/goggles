@@ -52,9 +52,35 @@ hardware from my local FabLab, [SoFAB](https://www.sofab.tv/).
    - Sand paper, for wet use, grit sizes 150, 180, 240, 320, 400, 600, 800, 1000, 2000, 2500, 3000, 4000.
    - Polishing paste. I recommend a car headlight polishing kit as they are cheap, and are commonly available.
 
-### Printing parts
+### Get the models
 
-### Cuting lenses
+It is is easy to [download](https://github.com/mathieu-lacage/goggles/releases/download/v0.1/goggles-0.1.zip) 
+all the STLs and SVGs from the project release page.
+
+It is also possible to rebuild these models from the source Python code:
+
+```
+$ pip install SolidPython
+$ ./goggles.py -r 400 -e
+```
+
+The resulting STLs will be located in the stl-400 subdirectory and the lens.svg file next to your goggles.py file.
+
+### Print parts
+
+1. The flex skirt
+
+   - Make sure you have the latest version of the [Formlab slicing software]()
+   - import the `skirt.stl` file, click on the MAGIC button to generate supports,
+     slice the result, and upload the model to your printer
+   - great care should be taken to remove supports from the print before wash
+     and curing because the print is very fragile at this step.
+   - I recommend curing longer (5 to 10 minutes) than required by the 
+     Formlabs datasheets. For some reason, I have observed wide variance in the
+     dimensional and elastic stability of the parts produced here so, be ready
+     to print more than once.
+
+### Cut lenses
 
 ### Assembly
 
