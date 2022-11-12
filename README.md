@@ -104,7 +104,7 @@ slicer so that the supports are not created on the side of the shell that will b
 in contact with the flex skirt (this will make it more likely your goggles do
 not let water in).
 
-3. Other parts
+#### Other parts
 
 ![Lens clip model viewed in OpenSCAD](/doc/assets/lens-clip.png)
 ![Lens alignment tool viewed in OpenSCAD](/doc/assets/lens-alignment.png)
@@ -115,11 +115,26 @@ can be printed without special care on your printer of choice.
 
 ### Cut lenses
 
+![Lens model viewed in OpenSCAD](/doc/assets/lens.png)
+
+The lens is made out of Acrylic (AKA PMMA, Plexiglas). Ideally, we could make it 
+out a single sheet of 6mm Acrylic and cut the right profile on the sides of this sheet
+but this would require tools I do not have (and I am not even sure it is possible).
+
+Instead, I chose to make these lenses out of two parts cut from sheets of 3mm Acrylic:
+
+The svg included in the release contains paths that can be loaded into an Origin 
+router and cut from Acrylic sheets:
+
 ### Assembly
 
 ### Making corrective lenses
 
 ## Other builds
+
+If, by chance, you decide to make your own based on these instructions, please drop
+me a note to let me know how it worked and what you had to change to have a working
+pair of goggles.
 
 ## How to modify the design
 

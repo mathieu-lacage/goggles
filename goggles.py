@@ -489,7 +489,7 @@ def lens():
 
     l = solid.mirror([0, 0, 1])(l)
     l = solid.translate([0, 0, LENS_BOTTOM_RING_HEIGHT+SKIRT_SQUASHED_THICKNESS])(l)
-    l = solid.color("yellow", 0.7)(l)
+    l = solid.color("grey", 0.7)(l)
     return l
 
 def lens_clip(height, thickness, alpha):
