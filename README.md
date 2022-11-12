@@ -124,6 +124,8 @@ to use its 4th rotating axis to mill the sides of a single sheet of 6mm acrylic 
 that would be a bit complicated so, instead, I chose to make these lenses out of two
 parts cus from sheets of 3mm acrylic, that are later glued together.
 
+![Lens top and bottom viewed in OpenSCAD](/doc/assets/lens-top-bottom.png)
+
 The svg included in the release contains paths that can be loaded into an Origin 
 router and cut from Acrylic sheets:
 

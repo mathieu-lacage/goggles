@@ -476,17 +476,7 @@ def lens_bottom():
     l = solid.color("grey", 0.7)(l)
     return l
 
-def lens_alt():
-    bot = lens_bottom()
-    top = lens_top()
-
-    l = bot + \
-        solid.translate([0, 0, LENS_BOTTOM_RING_HEIGHT+SHELL_THICKNESS+SKIRT_SQUASHED_THICKNESS])(top)
-    return l
-
-
-
-def lens():
+def lens(spacing=0):
     #
     #           A------------------
     #           |      top
@@ -510,21 +500,14 @@ def lens():
     #  GH=LENS_BOTTOM_RING_HEIGHT (1)
     #  Total height: 1+1+1.2+0.4+1=4.6 ??
 
-    epsilon = 0.01
-    bottom = ring(LENS_BOTTOM_RING_HEIGHT, LENS_BOTTOM_RING_WIDTH*2/3)
-    m1 = ring(SHELL_THICKNESS+SKIRT_SQUASHED_THICKNESS+epsilon, -SKIRT_THICKNESS) 
-    m2 = ring(LENS_GROOVE_HEIGHT+epsilon*2, -LENS_GROOVE_DEPTH)
-    top = ring(LENS_TOP_HEIGHT, 0)
+    bot = lens_bottom()
+    top = lens_top()
 
-    l = bottom + \
-        solid.translate([0, 0, LENS_BOTTOM_RING_HEIGHT-epsilon])(m1) + \
-        solid.translate([0, 0, LENS_BOTTOM_RING_HEIGHT+SHELL_THICKNESS+SKIRT_SQUASHED_THICKNESS-epsilon])(m2) + \
-        solid.translate([0, 0, LENS_BOTTOM_RING_HEIGHT+SHELL_THICKNESS+SKIRT_SQUASHED_THICKNESS+LENS_GROOVE_HEIGHT])(top)
-
-    l = solid.mirror([0, 0, 1])(l)
+    l = bot + \
+        solid.translate([0, 0, -(LENS_BOTTOM_RING_HEIGHT+SHELL_THICKNESS+SKIRT_SQUASHED_THICKNESS)-spacing])(top)
     l = solid.translate([0, 0, LENS_BOTTOM_RING_HEIGHT+SKIRT_SQUASHED_THICKNESS])(l)
-    l = solid.color("grey", 0.7)(l)
     return l
+
 
 def lens_clip(height, thickness, alpha):
     a = ring(height, thickness)
@@ -589,7 +572,7 @@ def main():
     NSTEPS = args.resolution
     sh = shell()
     sk = skirt()
-    l = lens_alt()
+    l = lens()
     ltop = lens_top()
     lbot = lens_bottom()
     la = lens_alignment()
