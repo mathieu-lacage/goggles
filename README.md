@@ -86,7 +86,7 @@ The resulting STLs will be located in the stl-400 subdirectory and the lens.svg 
 
 #### The shell
 
-![Skirt model viewed in OpenSCAD](/doc/assets/shell.png)
+![Shell model viewed in OpenSCAD](/doc/assets/shell.png)
 
 I have printed the shell successfully both on the 
 [SoFAB](https://www.sofab.tv/)'s Formlab resin printer with both 
@@ -104,9 +104,11 @@ slicer so that the supports are not created on the side of the shell that will b
 in contact with the flex skirt (this will make it more likely your goggles do
 not let water in).
 
-XXX screenshot
-
 3. Other parts
+
+![Lens clip model viewed in OpenSCAD](/doc/assets/lens-clip.png)
+![Lens alignment tool viewed in OpenSCAD](/doc/assets/lens-alignment.png)
+![Back clip model viewed in OpenSCAD](/doc/assets/back-clip.png)
 
 The lens clip, the lens alignment tool, and, if you decide you need it, the back clip
 can be printed without special care on your printer of choice.

@@ -532,19 +532,9 @@ def clip():
     return o
 
 
-def back_clip1():
+def back_clip():
     o = rounded_square2(BACK_CLIP_X, BACK_CLIP_Y, BACK_CLIP_THICKNESS, BACK_CLIP_RADIUS, adjust=True)
-    a = square_torus(BACK_CLIP_X-BACK_CLIP_THICKNESS*2, BACK_CLIP_THICKNESS*3/2, BACK_CLIP_RADIUS)
-    b = solid.cube([BACK_CLIP_X-BACK_CLIP_THICKNESS*2, BACK_CLIP_THICKNESS*3/2, BACK_CLIP_THICKNESS], center=True)
-    a = solid.intersection()([a, b])
-    for i in [-BACK_CLIP_Y/4-BACK_CLIP_THICKNESS, -3*BACK_CLIP_THICKNESS/2, 3*BACK_CLIP_THICKNESS/2, BACK_CLIP_Y/4+BACK_CLIP_THICKNESS]:
-        tr = [0, i, 0]
-        o = o - solid.translate(tr)(b) + solid.translate(tr)(a)
-    return o
-
-def back_clip2():
-    o = rounded_square2(BACK_CLIP_X, BACK_CLIP_Y, BACK_CLIP_THICKNESS, BACK_CLIP_RADIUS, adjust=True)
-    a = rounded_square(BACK_CLIP_X-BACK_CLIP_THICKNESS*2, BACK_CLIP_THICKNESS, 100, BACK_CLIP_RADIUS, adjust=True)
+    a = rounded_square(BACK_CLIP_X-BACK_CLIP_THICKNESS*2-BACK_CLIP_RADIUS, BACK_CLIP_THICKNESS, 100, BACK_CLIP_RADIUS, adjust=True)
     a = solid.translate([0, 0, -50])(a)
     for i in [-BACK_CLIP_Y/4-BACK_CLIP_THICKNESS, -3*BACK_CLIP_THICKNESS/2, 3*BACK_CLIP_THICKNESS/2, BACK_CLIP_Y/4+BACK_CLIP_THICKNESS]:
         b = solid.translate([0, i, 0])(a)
@@ -566,11 +556,10 @@ def main():
     sh = shell()
     sk = skirt()
     l = lens()
-    la = lens_alignment() + l
+    la = lens_alignment()
 
     lc = lens_clip(LENS_GROOVE_HEIGHT, 2, math.pi/4)
-    bc1 = back_clip1()
-    bc2 = back_clip2()
+    bc = back_clip()
 
     output = sk + sh + l + lc
     if args.slice_v is not None or args.slice_h is not None:
@@ -592,8 +581,7 @@ def main():
     solid.scad_render_to_file(sk, 'skirt.scad')
     solid.scad_render_to_file(l, 'lens.scad')
     solid.scad_render_to_file(la, 'lens-alignment.scad')
-    solid.scad_render_to_file(bc1, 'back-clip1.scad')
-    solid.scad_render_to_file(bc2, 'back-clip2.scad')
+    solid.scad_render_to_file(bc, 'back-clip.scad')
 
     def export(name, type):
         import subprocess
@@ -610,8 +598,7 @@ def main():
         export('lens', 'stl')
         export('lens-clip', 'stl')
         export('lens-alignment', 'stl')
-        export('back-clip1', 'stl')
-        export('back-clip2', 'stl')
+        export('back-clip', 'stl')
 
     generate_lens_svg()
 
