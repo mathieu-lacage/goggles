@@ -608,7 +608,7 @@ def main():
         export('shell', 'stl')
         export('skirt', 'stl')
         export('lens', 'stl')
-        export('clip', 'stl')
+        export('lens-clip', 'stl')
         export('lens-alignment', 'stl')
         export('back-clip1', 'stl')
         export('back-clip2', 'stl')
