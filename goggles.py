@@ -451,6 +451,41 @@ def lens_alignment():
     return o
 
 
+def lens_top():
+    epsilon = 0.01
+    m2 = ring(LENS_GROOVE_HEIGHT+epsilon*2, -LENS_GROOVE_DEPTH)
+    top = ring(LENS_TOP_HEIGHT, 0)
+
+    l = solid.translate([0, 0, 0])(m2) + \
+        solid.translate([0, 0, LENS_GROOVE_HEIGHT])(top)
+
+    l = solid.mirror([0, 0, 1])(l)
+    l = solid.translate([0, 0, 0])(l)
+    l = solid.color("grey", 0.7)(l)
+    return l
+
+def lens_bottom():
+    epsilon = 0.01
+    bottom = ring(LENS_BOTTOM_RING_HEIGHT, LENS_BOTTOM_RING_WIDTH*2/3)
+    m1 = ring(SHELL_THICKNESS+SKIRT_SQUASHED_THICKNESS+epsilon, -SKIRT_THICKNESS) 
+    l = bottom + \
+        solid.translate([0, 0, LENS_BOTTOM_RING_HEIGHT-epsilon])(m1)
+
+    l = solid.mirror([0, 0, 1])(l)
+    l = solid.translate([0, 0, 0])(l)
+    l = solid.color("grey", 0.7)(l)
+    return l
+
+def lens_alt():
+    bot = lens_bottom()
+    top = lens_top()
+
+    l = bot + \
+        solid.translate([0, 0, LENS_BOTTOM_RING_HEIGHT+SHELL_THICKNESS+SKIRT_SQUASHED_THICKNESS])(top)
+    return l
+
+
+
 def lens():
     #
     #           A------------------
@@ -474,7 +509,6 @@ def lens():
     #  GF=LENS_BOTTOM_RING_WIDTH*2/3 (2*2/3)
     #  GH=LENS_BOTTOM_RING_HEIGHT (1)
     #  Total height: 1+1+1.2+0.4+1=4.6 ??
-
 
     epsilon = 0.01
     bottom = ring(LENS_BOTTOM_RING_HEIGHT, LENS_BOTTOM_RING_WIDTH*2/3)
@@ -555,7 +589,9 @@ def main():
     NSTEPS = args.resolution
     sh = shell()
     sk = skirt()
-    l = lens()
+    l = lens_alt()
+    ltop = lens_top()
+    lbot = lens_bottom()
     la = lens_alignment()
 
     lc = lens_clip(LENS_GROOVE_HEIGHT, 2, math.pi/4)
@@ -570,6 +606,8 @@ def main():
         if args.slice_h is not None:
             cut = cut + solid.translate([-100,-50,args.slice_h])(solid.cube([200,200,200]))
         lc = lc - cut
+        ltop = ltop - cut
+        lbot = lbot - cut
         sh = sh - cut
         sk = sk - cut
         l = l - cut
@@ -580,6 +618,8 @@ def main():
     solid.scad_render_to_file(sh, 'shell.scad')
     solid.scad_render_to_file(sk, 'skirt.scad')
     solid.scad_render_to_file(l, 'lens.scad')
+    solid.scad_render_to_file(ltop, 'lens-top.scad')
+    solid.scad_render_to_file(lbot, 'lens-bot.scad')
     solid.scad_render_to_file(la, 'lens-alignment.scad')
     solid.scad_render_to_file(bc, 'back-clip.scad')
 
@@ -596,6 +636,8 @@ def main():
         export('shell', 'stl')
         export('skirt', 'stl')
         export('lens', 'stl')
+        export('lens-top', 'stl')
+        export('lens-bot', 'stl')
         export('lens-clip', 'stl')
         export('lens-alignment', 'stl')
         export('back-clip', 'stl')
