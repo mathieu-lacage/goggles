@@ -35,8 +35,8 @@ BACK_CLIP_Y = 21
 BACK_CLIP_THICKNESS = 2
 BACK_CLIP_RADIUS = BACK_CLIP_THICKNESS/2
 
-SILICON_THICKNESS = 0.6
-SILICON_SQUASHED_THICKNESS = SILICON_SQUASHED_THICKNESS
+SKIRT_THICKNESS = 0.6
+SKIRT_SQUASHED_THICKNESS = SKIRT_THICKNESS
 
 XALPHA = 0.95
 YALPHA = XALPHA*0.03
@@ -52,7 +52,7 @@ SHELL_BOTTOM_HOLE_HEIGHT = 3
 LENS_TOP_HEIGHT=1
 LENS_GROOVE_DEPTH=1
 LENS_BOTTOM_RING_WIDTH=2
-LENS_BOTTOM_RING_HEIGHT=3-OTHICKNESS-SILICON_SQUASHED_THICKNESS
+LENS_BOTTOM_RING_HEIGHT=3-OTHICKNESS-SKIRT_SQUASHED_THICKNESS
 LENS_INNER_RING_WIDTH=1
 LENS_GROOVE_HEIGHT=3-LENS_TOP_HEIGHT
 
@@ -279,7 +279,7 @@ def skirt():
             .append(dx=-2*OTHICKNESS)\
             .append(dx=-SILICON_SKIRT_THICKNESS, dy=-SILICON_SKIRT_HEIGHT)\
             .rotate(alpha=0.5*distance(alpha)**12)\
-            .append(x=(-OTHICKNESS)-SILICON_THICKNESS, y=-SILICON_THICKNESS)\
+            .append(x=(-OTHICKNESS)-SKIRT_THICKNESS, y=-SKIRT_THICKNESS)\
             .splinify()
         return eu3(s.points)
 
@@ -288,22 +288,22 @@ def skirt():
         path = mg2.Path(path=curve)\
             .translate(SHELL_TOP_X, 0)\
             .append(dx=OTHICKNESS)\
-            .append(dy=SILICON_THICKNESS)\
-            .append(dx=-OTHICKNESS-SILICON_THICKNESS)
+            .append(dy=SKIRT_THICKNESS)\
+            .append(dx=-OTHICKNESS-SKIRT_THICKNESS)
 
-        delta = mg2.Point(x=SHELL_TOP_X, y=SILICON_THICKNESS) - path.points.last
+        delta = mg2.Point(x=SHELL_TOP_X, y=SKIRT_THICKNESS) - path.points.last
         return_path = mg2.Path(x=0, y=0)\
             .append(dx=(1-XALPHA+0.05)*delta.x, dy=(1-YALPHA)*delta.y) \
             .append(x=delta.x, y=delta.y) \
             .splinify()
         path = path.extend(path=return_path)\
             .append(dx=-LENS_BOTTOM_RING_WIDTH)\
-            .append(dx=-SILICON_THICKNESS)\
-            .append(dy=-SILICON_THICKNESS-OTHICKNESS)\
+            .append(dx=-SKIRT_THICKNESS)\
+            .append(dy=-SKIRT_THICKNESS-OTHICKNESS)\
             .extend(path=mg2.Path(x=0, y=0)\
-                .append(dx=SILICON_THICKNESS,dy=-SILICON_THICKNESS/2)\
-                .append(dx=SILICON_THICKNESS/2, dy=SILICON_THICKNESS/2)\
-                .append(dx=-SILICON_THICKNESS/2)\
+                .append(dx=SKIRT_THICKNESS,dy=-SKIRT_THICKNESS/2)\
+                .append(dx=SKIRT_THICKNESS/2, dy=SKIRT_THICKNESS/2)\
+                .append(dx=-SKIRT_THICKNESS/2)\
                 .splinify()
             )\
             .append(dy=OTHICKNESS)
@@ -313,11 +313,11 @@ def skirt():
     o = extrude_along_path(_profile, path, connect_ends=True)
 
 
-    epsilon = SILICON_THICKNESS/10
+    epsilon = SKIRT_THICKNESS/10
     n = len(path)
     normals = [ellipsis_perpendicular(ELLIPSIS_WIDTH, ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(2*math.pi/NSTEPS, 2*math.pi, NSTEPS, include_end=False)]
     skirt_path = [
-        Point3(x=p.x, y=p.y, z=fheight(float(i)/(n-1))+SILICON_THICKNESS-epsilon)+normal/mg2.norm2(normal)*(SHELL_TOP_X+OTHICKNESS+fwidth(float(i)/(n-1)))
+        Point3(x=p.x, y=p.y, z=fheight(float(i)/(n-1))+SKIRT_THICKNESS-epsilon)+normal/mg2.norm2(normal)*(SHELL_TOP_X+OTHICKNESS+fwidth(float(i)/(n-1)))
         for i, (p, normal) in enumerate(zip(path, normals))
     ]
     o = solid.color("grey")(o) + solid.color("yellow")(extrude_along_path(skirt_profile, skirt_path, connect_ends=True))
@@ -393,7 +393,7 @@ def generate_lens_svg():
 
         context.save()
         context.translate(ELLIPSIS_WIDTH*3+spacing*2, ELLIPSIS_HEIGHT+spacing)
-        half_lens(context, LENS_BOTTOM_RING_WIDTH*2/3, 0, OTHICKNESS+SILICON_SQUASHED_THICKNESS)
+        half_lens(context, LENS_BOTTOM_RING_WIDTH*2/3, 0, OTHICKNESS+SKIRT_SQUASHED_THICKNESS)
         context.restore()
 
 
@@ -403,7 +403,7 @@ def lens_alignment():
     profile = mg2.Path(x=bottom_width, y=0)\
         .label("start") \
         .append(dy=LENS_BOTTOM_RING_HEIGHT)\
-        .append(dx=-bottom_width, dy=OTHICKNESS+SILICON_SQUASHED_THICKNESS+LENS_GROOVE_HEIGHT)\
+        .append(dx=-bottom_width, dy=OTHICKNESS+SKIRT_SQUASHED_THICKNESS+LENS_GROOVE_HEIGHT)\
         .append(dy=LENS_TOP_HEIGHT)\
         .append(dx=bottom_width+1)\
         .append(dy=0, dx=1, relative_to="start")
@@ -431,7 +431,7 @@ def lens():
     #  AB=LENS_TOP_HEIGHT (1)
     #  CD=LENS_GROOVE_HEIGHT (1)
     #  BC=DE=LENS_GROOVE_DEPTH (1)
-    #  EF=OTHICKNESS+SILICON_SQUASHED_THICKNESS
+    #  EF=OTHICKNESS+SKIRT_SQUASHED_THICKNESS
     #  GF=LENS_BOTTOM_RING_WIDTH*2/3 (2*2/3)
     #  GH=LENS_BOTTOM_RING_HEIGHT (1)
     #  Total height: 1+1+1.2+0.4+1=4.6 ??
@@ -439,17 +439,17 @@ def lens():
 
     epsilon = 0.01
     bottom = ring(LENS_BOTTOM_RING_HEIGHT, LENS_BOTTOM_RING_WIDTH*2/3)
-    m1 = ring(OTHICKNESS+SILICON_SQUASHED_THICKNESS+epsilon, -SILICON_THICKNESS) 
+    m1 = ring(OTHICKNESS+SKIRT_SQUASHED_THICKNESS+epsilon, -SKIRT_THICKNESS) 
     m2 = ring(LENS_GROOVE_HEIGHT+epsilon*2, -LENS_GROOVE_DEPTH)
     top = ring(LENS_TOP_HEIGHT, 0)
 
     l = bottom + \
         solid.translate([0, 0, LENS_BOTTOM_RING_HEIGHT-epsilon])(m1) + \
-        solid.translate([0, 0, LENS_BOTTOM_RING_HEIGHT+OTHICKNESS+SILICON_SQUASHED_THICKNESS-epsilon])(m2) + \
-        solid.translate([0, 0, LENS_BOTTOM_RING_HEIGHT+OTHICKNESS+SILICON_SQUASHED_THICKNESS+LENS_GROOVE_HEIGHT])(top)
+        solid.translate([0, 0, LENS_BOTTOM_RING_HEIGHT+OTHICKNESS+SKIRT_SQUASHED_THICKNESS-epsilon])(m2) + \
+        solid.translate([0, 0, LENS_BOTTOM_RING_HEIGHT+OTHICKNESS+SKIRT_SQUASHED_THICKNESS+LENS_GROOVE_HEIGHT])(top)
 
     l = solid.mirror([0, 0, 1])(l)
-    l = solid.translate([0, 0, LENS_BOTTOM_RING_HEIGHT+SILICON_SQUASHED_THICKNESS])(l)
+    l = solid.translate([0, 0, LENS_BOTTOM_RING_HEIGHT+SKIRT_SQUASHED_THICKNESS])(l)
     l = solid.color("yellow", 0.7)(l)
     return l
 
