@@ -451,10 +451,10 @@ def lens_alignment():
     return o
 
 
-def lens_top():
+def lens_top(delta=0):
     epsilon = 0.01
-    m2 = ring(LENS_GROOVE_HEIGHT+epsilon*2, -LENS_GROOVE_DEPTH)
-    top = ring(LENS_TOP_HEIGHT, 0)
+    m2 = ring(LENS_GROOVE_HEIGHT+epsilon*2, -LENS_GROOVE_DEPTH-SKIRT_THICKNESS+delta)
+    top = ring(LENS_TOP_HEIGHT, -SKIRT_THICKNESS+delta)
 
     l = solid.translate([0, 0, 0])(m2) + \
         solid.translate([0, 0, LENS_GROOVE_HEIGHT])(top)
@@ -464,11 +464,11 @@ def lens_top():
     l = solid.color("grey", 0.7)(l)
     return l
 
-def lens_bottom():
-    print(2*(ELLIPSIS_WIDTH-SKIRT_THICKNESS), 2*(ELLIPSIS_HEIGHT-SKIRT_THICKNESS))
+def lens_bottom(delta=0):
+#    print(2*(ELLIPSIS_WIDTH-SKIRT_THICKNESS), 2*(ELLIPSIS_HEIGHT-SKIRT_THICKNESS))
     epsilon = 0.01
     bottom = ring(LENS_BOTTOM_RING_HEIGHT, LENS_BOTTOM_RING_WIDTH*2/3)
-    m1 = ring(SHELL_THICKNESS+SKIRT_SQUASHED_THICKNESS+epsilon, -SKIRT_THICKNESS) 
+    m1 = ring(SHELL_THICKNESS+SKIRT_SQUASHED_THICKNESS+epsilon, -SKIRT_THICKNESS+delta)
     l = bottom + \
         solid.translate([0, 0, LENS_BOTTOM_RING_HEIGHT-epsilon])(m1)
     
@@ -478,19 +478,19 @@ def lens_bottom():
     l = solid.color("grey", 0.7)(l)
     return l
 
-def lens(spacing=0):
+def lens():
     #
-    #           A------------------
-    #           |      top
-    #           B---C  ----
-    #               |  m2
-    #  -------  E---D  -----
-    #   shell | |
-    #  -------  |
-    #  -------  |      m1
-    #  silicon| |
-    #  -------  |
-    #  G--------F      ------
+    #                A------------------
+    #                |      top
+    #                B---C  ----
+    #                    |  m2
+    #  -------  ---- E---D  -----
+    #   shell | |  | |
+    #  -------  |  | |
+    #  ---------   | |      m1
+    #  skirt       | |
+    #  ------------  |
+    #  G-------------F      ------
     #  |               bottom
     #  H---------------------------
     #
@@ -506,7 +506,7 @@ def lens(spacing=0):
     top = lens_top()
 
     l = bot
-    l = l + solid.translate([0, 0, -(LENS_BOTTOM_RING_HEIGHT+SHELL_THICKNESS+SKIRT_SQUASHED_THICKNESS)-spacing])(top)
+    l = l + solid.translate([0, 0, -(LENS_BOTTOM_RING_HEIGHT+SHELL_THICKNESS+SKIRT_SQUASHED_THICKNESS)])(top)
     l = solid.translate([0, 0, LENS_BOTTOM_RING_HEIGHT+SKIRT_SQUASHED_THICKNESS])(l)
     return l
 
