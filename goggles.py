@@ -62,7 +62,7 @@ SKIRT_THICKNESS = 0.6
 # small than SKIRT_THICKNESS, I have never been able to assemble
 # the skirt with the other pieces.
 SKIRT_SQUASHED_THICKNESS = SKIRT_THICKNESS
-SKIRT_RING_PADDING=0.1
+SKIRT_RING_PADDING=0
 
 TOOTH_WIDTH = UNIT/4
 TOP_ATTACHMENT_WIDTH = 0.05
@@ -465,11 +465,13 @@ def lens_top():
     return l
 
 def lens_bottom():
+    print(2*(ELLIPSIS_WIDTH-SKIRT_THICKNESS), 2*(ELLIPSIS_HEIGHT-SKIRT_THICKNESS))
     epsilon = 0.01
     bottom = ring(LENS_BOTTOM_RING_HEIGHT, LENS_BOTTOM_RING_WIDTH*2/3)
     m1 = ring(SHELL_THICKNESS+SKIRT_SQUASHED_THICKNESS+epsilon, -SKIRT_THICKNESS) 
     l = bottom + \
         solid.translate([0, 0, LENS_BOTTOM_RING_HEIGHT-epsilon])(m1)
+    
 
     l = solid.mirror([0, 0, 1])(l)
     l = solid.translate([0, 0, 0])(l)
@@ -503,8 +505,8 @@ def lens(spacing=0):
     bot = lens_bottom()
     top = lens_top()
 
-    l = bot + \
-        solid.translate([0, 0, -(LENS_BOTTOM_RING_HEIGHT+SHELL_THICKNESS+SKIRT_SQUASHED_THICKNESS)-spacing])(top)
+    l = bot
+    l = l + solid.translate([0, 0, -(LENS_BOTTOM_RING_HEIGHT+SHELL_THICKNESS+SKIRT_SQUASHED_THICKNESS)-spacing])(top)
     l = solid.translate([0, 0, LENS_BOTTOM_RING_HEIGHT+SKIRT_SQUASHED_THICKNESS])(l)
     return l
 
@@ -522,32 +524,6 @@ def lens_clip(height, thickness, alpha):
     o = solid.mirror([1, 0, 0])(o)
     o = solid.translate([0, 0, -height-SHELL_THICKNESS])(o)
     return o
-
-def clip():
-    profile = mg2.Path(x=SHELL_TOP_X, y=SHELL_TOP_Y)\
-        .label("start")\
-        .extend(
-            mg2.Path(x=0, y=0)\
-            .append(dx=-LENS_BOTTOM_RING_WIDTH*0.4, dy=(LENS_TOP_HEIGHT+LENS_GROOVE_HEIGHT)*0.8)\
-            .append(dx=-LENS_BOTTOM_RING_WIDTH*0.6, dy=(LENS_TOP_HEIGHT+LENS_GROOVE_HEIGHT)*0.2)\
-            .splinify()
-        )\
-        .append(dy=-LENS_TOP_HEIGHT)\
-        .append(dx=-LENS_GROOVE_DEPTH)\
-        .append(dy=-LENS_GROOVE_HEIGHT)\
-        .append(dx=LENS_GROOVE_DEPTH)\
-        .append(dx=0,dy=0,relative_to="start")
-    path = [ellipsis(ELLIPSIS_WIDTH, ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(2*math.pi/NSTEPS, 2*math.pi, NSTEPS, include_end=False)]
-    o = extrude_along_path(eu3(profile.points), path, connect_ends=True)
-    cut = solid.cube([(ELLIPSIS_WIDTH+10)*2, 40, 40], center=True)
-    cut = solid.translate([0, -20, 0])(cut)
-    #cut = solid.debug(cut)
-    o = o - cut
-    o = solid.mirror([0, 0, 1])(o)
-    o = solid.translate([0, 0, -SHELL_THICKNESS-SHELL_THICKNESS])(o)
-    #o = solid.translate([0, 0, -LENS_GROOVE_HEIGHT])(o)
-    return o
-
 
 def back_clip():
     o = rounded_square2(BACK_CLIP_X, BACK_CLIP_Y, BACK_CLIP_THICKNESS, BACK_CLIP_RADIUS, adjust=True)
@@ -577,10 +553,10 @@ def main():
     lbot = lens_bottom()
     la = lens_alignment()
 
-    lc = lens_clip(LENS_GROOVE_HEIGHT, 2, math.pi/4)
+    lc = lens_clip(LENS_GROOVE_HEIGHT, 3, math.pi/4)
     bc = back_clip()
 
-    output = sk + sh + l + lc
+    output = sk + l + lc + sh
     if args.slice_v is not None or args.slice_h is not None:
         if args.slice_v is not None:
             cut = solid.rotate([0,0,args.slice_v])(solid.translate([-100,0,-100])(solid.cube([200,200,200])))
