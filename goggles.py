@@ -8,6 +8,7 @@ import transformations
 from extrude_along_path import extrude_along_path
 
 import mg2
+import utils
 
 
 def eu3(path):
@@ -17,10 +18,8 @@ def eu3(path):
 
 Point3 = euclid3.Point3
 
-def ellipsis(a, b, t):
-    return euclid3.Point3(a*math.cos(t), b*math.sin(t), 0)
 def ellipsis_perpendicular(a,b,t):
-    p = ellipsis(a,b,t)
+    p = utils.ellipsis(a,b,t)
     return euclid3.Point3(p.x/a**2, p.y/b**2)
 
 
@@ -118,7 +117,7 @@ def ydistance(alpha):
     def _norm2(v):
         return math.sqrt(v.x**2+v.y**2)
     t = 2*math.pi*alpha
-    e = ellipsis(ELLIPSIS_WIDTH, ELLIPSIS_HEIGHT, t)
+    e = utils.ellipsis(ELLIPSIS_WIDTH, ELLIPSIS_HEIGHT, t)
     ep = ellipsis_perpendicular(ELLIPSIS_WIDTH, ELLIPSIS_HEIGHT, t)
     ep = ep / _norm2(ep)
     p = e + ep * fwidth(alpha)
@@ -220,11 +219,11 @@ def shell():
         return eu3(p1.reversed_points)
 
 
-    path1 = [ellipsis(ELLIPSIS_WIDTH, ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(2*math.pi/NSTEPS, 2*math.pi, NSTEPS, include_end=False)]
+    path1 = [utils.ellipsis(ELLIPSIS_WIDTH, ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(2*math.pi/NSTEPS, 2*math.pi, NSTEPS, include_end=False)]
     o = extrude_along_path(profile, path1, connect_ends=True)
 #    o = solid.debug(o)
 
-    path2 = [ellipsis(ELLIPSIS_WIDTH, ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(-TOP_ATTACHMENT_WIDTH*2*math.pi, TOP_ATTACHMENT_WIDTH*2*math.pi, 40)]
+    path2 = [utils.ellipsis(ELLIPSIS_WIDTH, ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(-TOP_ATTACHMENT_WIDTH*2*math.pi, TOP_ATTACHMENT_WIDTH*2*math.pi, 40)]
     top_attachment = extrude_along_path(top_attachment_profile, path2)
     top_attachment = top_attachment -\
         solid.translate([ELLIPSIS_WIDTH+SHELL_TOP_X+SHELL_THICKNESS+TOOTH_WIDTH, 0, -10])(
@@ -261,7 +260,7 @@ def shell():
             )
         return eu3(path.reversed_points)
         
-    path3 = [ellipsis(ELLIPSIS_WIDTH, ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(math.pi-BOTTOM_ATTACHMENT_WIDTH*2*math.pi, math.pi+BOTTOM_ATTACHMENT_WIDTH*2*math.pi, 40)]
+    path3 = [utils.ellipsis(ELLIPSIS_WIDTH, ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(math.pi-BOTTOM_ATTACHMENT_WIDTH*2*math.pi, math.pi+BOTTOM_ATTACHMENT_WIDTH*2*math.pi, 40)]
     bottom_attachment = extrude_along_path(bottom_attachment_profile, path3)
 
     bah = rounded_square(SHELL_BOTTOM_HOLE_HEIGHT, SHELL_BOTTOM_HOLE_WIDTH, 20, SHELL_THICKNESS/2)
@@ -331,7 +330,7 @@ def skirt():
             .append(dy=SHELL_THICKNESS)
         return eu3(path.points)
 
-    path = [ellipsis(ELLIPSIS_WIDTH, ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(2*math.pi/NSTEPS, 2*math.pi, NSTEPS, include_end=False)]
+    path = [utils.ellipsis(ELLIPSIS_WIDTH, ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(2*math.pi/NSTEPS, 2*math.pi, NSTEPS, include_end=False)]
     o = extrude_along_path(_profile, path, connect_ends=True)
 
 
@@ -349,13 +348,6 @@ def skirt():
     o = solid.translate([0, 0, 0])(o)
 #    o = solid.color("grey")(o)
     #o = solid.debug(o)
-    return o
-
-def ring(height, delta):
-    path = [ellipsis(ELLIPSIS_WIDTH+delta, ELLIPSIS_HEIGHT+delta, t) for t in solid.utils.frange(0, 2*math.pi, NSTEPS, include_end=True)]
-    o = solid.linear_extrude(height)(
-        solid.polygon(path)
-    )
     return o
 
 
@@ -429,15 +421,15 @@ def lens_alignment():
         .append(dy=LENS_TOP_HEIGHT)\
         .append(dx=bottom_width+1)\
         .append(dy=0, dx=1, relative_to="start")
-    path = [ellipsis(ELLIPSIS_WIDTH, ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(2*math.pi/NSTEPS, 2*math.pi, NSTEPS, include_end=False)]
+    path = [utils.ellipsis(ELLIPSIS_WIDTH, ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(2*math.pi/NSTEPS, 2*math.pi, NSTEPS, include_end=False)]
     o = extrude_along_path(eu3(profile.reversed_points), path, connect_ends=True)
     return o
 
 
 def lens_top(delta=0):
     epsilon = 0.01
-    m2 = ring(LENS_GROOVE_HEIGHT+epsilon*2, -LENS_GROOVE_DEPTH-SKIRT_THICKNESS+delta)
-    top = ring(LENS_TOP_HEIGHT, -SKIRT_THICKNESS+delta)
+    m2 = utils.ring(LENS_GROOVE_HEIGHT+epsilon*2, -LENS_GROOVE_DEPTH-SKIRT_THICKNESS+delta)
+    top = utils.ring(LENS_TOP_HEIGHT, -SKIRT_THICKNESS+delta)
 
     l = solid.translate([0, 0, 0])(m2) + \
         solid.translate([0, 0, LENS_GROOVE_HEIGHT])(top)
@@ -450,8 +442,8 @@ def lens_top(delta=0):
 def lens_bottom(delta=0):
 #    print(2*(ELLIPSIS_WIDTH-SKIRT_THICKNESS), 2*(ELLIPSIS_HEIGHT-SKIRT_THICKNESS))
     epsilon = 0.01
-    bottom = ring(LENS_BOTTOM_RING_HEIGHT, LENS_BOTTOM_RING_WIDTH*2/3)
-    m1 = ring(SHELL_THICKNESS+SKIRT_SQUASHED_THICKNESS+epsilon, -SKIRT_THICKNESS+delta)
+    bottom = utils.ring(LENS_BOTTOM_RING_HEIGHT, LENS_BOTTOM_RING_WIDTH*2/3)
+    m1 = utils.ring(SHELL_THICKNESS+SKIRT_SQUASHED_THICKNESS+epsilon, -SKIRT_THICKNESS+delta)
     l = bottom + \
         solid.translate([0, 0, LENS_BOTTOM_RING_HEIGHT-epsilon])(m1)
     
@@ -495,8 +487,8 @@ def lens():
 
 
 def lens_clip(height, thickness, alpha):
-    a = ring(height, thickness)
-    b = ring(height+2, -LENS_GROOVE_DEPTH)
+    a = utils.ring(height, thickness)
+    b = utils.ring(height+2, -LENS_GROOVE_DEPTH)
     b = solid.translate([0, 0, -1])(b)
     c = solid.cube([200, 200, 200], center=True)
     c = solid.translate([0, 100, 0])(c)
