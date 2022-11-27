@@ -22,13 +22,30 @@ def lens_top(delta=0):
     l = solid.color("grey", 0.7)(l)
     return l
 
+def myopia_correction(diopters, x_offset=0, y_offset=0):
+    assert diopters <= 4
+    # Calculate radius of curvature of plano-concave lens
+    n2 = 1.49 # PMMA
+    n1 = 1 # air
+    R1 = (n2/n1 - 1) / diopters
+    R1 = R1*1000 # convert meters to millimeters
+    
+    max_half_width = max(constants.ELLIPSIS_WIDTH, constants.ELLIPSIS_HEIGHT)-constants.SKIRT_THICKNESS+max(math.fabs(x_offset), math.fabs(y_offset))
+    delta = math.sqrt(R1**2-max_half_width**2)
+    o = solid.sphere(r=R1, segments=1000)
+    o = solid.translate([x_offset, y_offset, -delta])(o)
+#    o = solid.debug(o)
+    return o
+    
+
 def lens_bottom(delta=0):
 #    print(2*(constants.ELLIPSIS_WIDTH-constants.SKIRT_THICKNESS), 2*(constants.ELLIPSIS_HEIGHT-constants.SKIRT_THICKNESS))
     epsilon = 0.01
     bottom = utils.ring(constants.LENS_BOTTOM_RING_HEIGHT, constants.LENS_BOTTOM_RING_WIDTH*2/3)
     m1 = utils.ring(constants.SHELL_THICKNESS+constants.SKIRT_SQUASHED_THICKNESS+epsilon, -constants.SKIRT_THICKNESS+delta)
-    l = bottom + \
-        solid.translate([0, 0, constants.LENS_BOTTOM_RING_HEIGHT-epsilon])(m1)
+    l = bottom
+    l = l + solid.translate([0, 0, constants.LENS_BOTTOM_RING_HEIGHT-epsilon])(m1)
+    l = l - myopia_correction(2)
     
 
     l = solid.mirror([0, 0, 1])(l)
