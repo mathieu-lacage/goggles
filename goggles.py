@@ -12,12 +12,6 @@ import utils
 import lens
 import constants
 
-
-def eu3(path):
-    if len(path) == 0:
-        return []
-    return [euclid3.Point3(p.x, p.y, 0) for p in path]
-
 Point3 = euclid3.Point3
 
 def ellipsis_perpendicular(a,b,t):
@@ -120,7 +114,7 @@ def shell():
             .append(x=constants.SHELL_TOP_X, y=constants.SHELL_TOP_Y)\
             .append(dx=-constants.LENS_BOTTOM_RING_WIDTH)\
             .append(dy=constants.SHELL_THICKNESS)
-        return eu3(path.reversed_points)
+        return utils.eu3(path.reversed_points)
 
     def top_attachment_profile(attachment_alpha):
         if attachment_alpha > 0.5:
@@ -143,7 +137,7 @@ def shell():
             .append(dx=-curve.width/2)\
             .append(dy=constants.SHELL_THICKNESS-epsilon)\
             .append(dx=curve.width-epsilon)
-        return eu3(p1.reversed_points)
+        return utils.eu3(p1.reversed_points)
 
 
     path1 = [utils.ellipsis(constants.ELLIPSIS_WIDTH, constants.ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(2*math.pi/constants.NSTEPS, 2*math.pi, constants.NSTEPS, include_end=False)]
@@ -185,7 +179,7 @@ def shell():
                 .append(dx=-(xalpha)*(delta_x+handle_width)*3/4, dy=-(yalpha)*delta_y)\
                 .splinify()\
             )
-        return eu3(path.reversed_points)
+        return utils.eu3(path.reversed_points)
         
     path3 = [utils.ellipsis(constants.ELLIPSIS_WIDTH, constants.ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(math.pi-constants.BOTTOM_ATTACHMENT_WIDTH*2*math.pi, math.pi+constants.BOTTOM_ATTACHMENT_WIDTH*2*math.pi, 40)]
     bottom_attachment = extrude_along_path(bottom_attachment_profile, path3)
@@ -228,7 +222,7 @@ def skirt():
             .rotate(alpha=0.5*distance(alpha)**12)\
             .append(x=(-constants.SHELL_THICKNESS)-constants.SKIRT_THICKNESS, y=-constants.SKIRT_THICKNESS)\
             .splinify()
-        return eu3(s.points)
+        return utils.eu3(s.points)
 
     def _profile(alpha):
         curve = shell_curve(alpha)
@@ -255,7 +249,7 @@ def skirt():
                 .splinify()
             )\
             .append(dy=constants.SHELL_THICKNESS)
-        return eu3(path.points)
+        return utils.eu3(path.points)
 
     path = [utils.ellipsis(constants.ELLIPSIS_WIDTH, constants.ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(2*math.pi/constants.NSTEPS, 2*math.pi, constants.NSTEPS, include_end=False)]
     o = extrude_along_path(_profile, path, connect_ends=True)
@@ -275,96 +269,6 @@ def skirt():
     o = solid.translate([0, 0, 0])(o)
 #    o = solid.color("grey")(o)
     #o = solid.debug(o)
-    return o
-
-
-def generate_lens_svg():
-    import cairo
-    kerf = 0.1
-    laser = 0.01
-    spacing = constants.ELLIPSIS_WIDTH/3
-
-    def half_lens(context, delta1, delta2, depth):
-        context.save()
-        context.translate(-constants.ELLIPSIS_WIDTH, -constants.ELLIPSIS_HEIGHT)
-        context.arc(0, 0, 0.5, 0, 2*math.pi)
-        context.set_source_rgba(0.5, 0.5, 0.5, 1)
-        context.fill()
-        context.restore()
-
-        context.save()
-        context.scale(constants.ELLIPSIS_WIDTH+delta1, constants.ELLIPSIS_HEIGHT+delta1)
-        context.arc(0, 0, 1, 0, 2*math.pi)
-        context.set_source_rgba(0.5, 0.5, 0.5, 1)
-        context.fill()
-        context.restore()
-
-        context.save()
-        context.save()
-        context.scale(constants.ELLIPSIS_WIDTH+delta1+kerf/2, constants.ELLIPSIS_HEIGHT+delta1+kerf/2)
-        context.arc(0, 0, 1, 0, 2*math.pi)
-        context.restore()
-        context.set_source_rgba(1, 0, 0, 1)
-        context.set_line_width(laser)
-        context.stroke()
-        context.restore()
-
-        context.save()
-        context.scale(constants.ELLIPSIS_WIDTH+delta2, constants.ELLIPSIS_HEIGHT+delta2)
-        context.arc(0, 0, 1, 0, 2*math.pi)
-        context.set_source_rgba(1, 1, 1, 1)
-        context.fill()
-        context.restore()
-
-        context.save()
-        context.translate(-constants.ELLIPSIS_WIDTH/2, 0)
-        context.set_source_rgb(0, 0, 1)
-        context.set_font_size(2)
-        context.show_text("depth cut=%.02fmm" % depth)
-        context.restore()
-
-    with cairo.SVGSurface("lens.svg", constants.ELLIPSIS_WIDTH*6, constants.ELLIPSIS_HEIGHT*6) as surface:
-        surface.set_document_unit(cairo.SVGUnit.MM)
-        context = cairo.Context(surface)
-
-        context.save()
-        context.translate(constants.ELLIPSIS_WIDTH+spacing, constants.ELLIPSIS_HEIGHT+spacing)
-        half_lens(context, 0, -constants.LENS_GROOVE_DEPTH, constants.LENS_GROOVE_HEIGHT)
-        context.restore()
-
-        context.save()
-        context.translate(constants.ELLIPSIS_WIDTH*3+spacing*2, constants.ELLIPSIS_HEIGHT+spacing)
-        half_lens(context, constants.LENS_BOTTOM_RING_WIDTH*2/3, 0, constants.SHELL_THICKNESS+constants.SKIRT_SQUASHED_THICKNESS)
-        context.restore()
-
-
-
-def lens_alignment():
-    bottom_width = constants.LENS_BOTTOM_RING_WIDTH*2/3
-    profile = mg2.Path(x=bottom_width, y=0)\
-        .label("start") \
-        .append(dy=constants.LENS_BOTTOM_RING_HEIGHT)\
-        .append(dx=-bottom_width, dy=constants.SHELL_THICKNESS+constants.SKIRT_SQUASHED_THICKNESS+constants.LENS_GROOVE_HEIGHT)\
-        .append(dy=constants.LENS_TOP_HEIGHT)\
-        .append(dx=bottom_width+1)\
-        .append(dy=0, dx=1, relative_to="start")
-    path = [utils.ellipsis(constants.ELLIPSIS_WIDTH, constants.ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(2*math.pi/constants.NSTEPS, 2*math.pi, constants.NSTEPS, include_end=False)]
-    o = extrude_along_path(eu3(profile.reversed_points), path, connect_ends=True)
-    return o
-
-
-def lens_clip(height, thickness, alpha):
-    a = utils.ring(height, thickness)
-    b = utils.ring(height+2, -constants.LENS_GROOVE_DEPTH)
-    b = solid.translate([0, 0, -1])(b)
-    c = solid.cube([200, 200, 200], center=True)
-    c = solid.translate([0, 100, 0])(c)
-    d = solid.rotate([0, 0, 360*alpha/2/(2*math.pi)])(c)
-    e = solid.rotate([0, 0, -360*alpha/2/(2*math.pi)])(c)
-    f = d - e
-    o = a - b - f
-    o = solid.mirror([1, 0, 0])(o)
-    o = solid.translate([0, 0, -height-constants.SHELL_THICKNESS])(o)
     return o
 
 def back_clip():
@@ -390,11 +294,7 @@ def main():
     sh = shell()
     sk = skirt()
     l = lens.lens()
-    ltop = lens.lens_top()
-    lbot = lens.lens_bottom()
-    la = lens_alignment()
-
-    lc = lens_clip(constants.LENS_GROOVE_HEIGHT, 3, math.pi/4)
+    lc = lens.lens_clip(constants.LENS_GROOVE_HEIGHT, 3, math.pi/4)
     bc = back_clip()
 
     output = sk + l + lc + sh
@@ -414,13 +314,8 @@ def main():
         la = la - cut
         output = output - cut
     solid.scad_render_to_file(output, 'goggles.scad')
-    solid.scad_render_to_file(lc, 'lens-clip.scad')
     solid.scad_render_to_file(sh, 'shell.scad')
     solid.scad_render_to_file(sk, 'skirt.scad')
-    solid.scad_render_to_file(l, 'lens.scad')
-    solid.scad_render_to_file(ltop, 'lens-top.scad')
-    solid.scad_render_to_file(lbot, 'lens-bot.scad')
-    solid.scad_render_to_file(la, 'lens-alignment.scad')
     solid.scad_render_to_file(bc, 'back-clip.scad')
 
     def export(name, type):
@@ -435,14 +330,7 @@ def main():
     if args.export:
         export('shell', 'stl')
         export('skirt', 'stl')
-        export('lens', 'stl')
-        export('lens-top', 'stl')
-        export('lens-bot', 'stl')
-        export('lens-clip', 'stl')
-        export('lens-alignment', 'stl')
         export('back-clip', 'stl')
-
-    generate_lens_svg()
 
 def main2():
     import subprocess
