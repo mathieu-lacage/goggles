@@ -27,9 +27,11 @@ def myopia_correction(diopters, x_offset=0, y_offset=0):
     # Calculate radius of curvature of plano-concave lens
     n2 = 1.49 # PMMA
     n1 = 1 # air
+    # lens maker equation applied to a plano-concave lens
     R1 = (n2/n1 - 1) / diopters
-    R1 = R1*1000 # convert meters to millimeters
-    
+     # convert meters to millimeters
+    R1 = R1*1000
+
     max_half_width = max(constants.ELLIPSIS_WIDTH, constants.ELLIPSIS_HEIGHT)-constants.SKIRT_THICKNESS+max(math.fabs(x_offset), math.fabs(y_offset))
     delta = math.sqrt(R1**2-max_half_width**2)
     o = solid.sphere(r=R1, segments=1000)
