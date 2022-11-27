@@ -173,23 +173,6 @@ def rounded_square2(x, y, height, radius, adjust=False):
     )
     return o
 
-def square_torus(x, y, radius):
-    r = solid.sphere(radius, segments=40)
-    o = solid.hull()(
-        solid.translate([-x/2, -y/2, 0])(r),
-        solid.translate([x/2, -y/2, 0])(r)
-    ) + solid.hull()(
-        solid.translate([-x/2, y/2, 0])(r),
-        solid.translate([x/2, y/2, 0])(r),
-    ) + solid.hull()(
-        solid.translate([x/2, y/2, 0])(r),
-        solid.translate([x/2, -y/2, 0])(r),
-    ) + solid.hull()(
-        solid.translate([-x/2, y/2, 0])(r),
-        solid.translate([-x/2, -y/2, 0])(r),
-    )
-    return o
-
 
 def shell():
 
