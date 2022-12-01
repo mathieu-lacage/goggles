@@ -24,7 +24,6 @@ def lens_top(delta=0):
 
 def myopia_correction(diopters, x_offset=0, y_offset=0):
     assert diopters <= 4
-    # Calculate radius of curvature of plano-concave lens
     n2 = 1.49 # PMMA
     n1 = 1 # air
     # lens maker equation applied to a plano-concave lens
@@ -164,9 +163,9 @@ def lens_alignment():
     return o
 
 
-def lens_clip(height, thickness, alpha):
-    a = utils.ring(height, thickness)
-    b = utils.ring(height+2, -constants.LENS_GROOVE_DEPTH)
+def lens_clip(height, width, alpha):
+    a = utils.ring(height, width)
+    b = utils.ring(height+2, -constants.LENS_GROOVE_DEPTH-constants.SKIRT_THICKNESS)
     b = solid.translate([0, 0, -1])(b)
     c = solid.cube([200, 200, 200], center=True)
     c = solid.translate([0, 100, 0])(c)
@@ -193,7 +192,9 @@ def main():
     ltop = lens_top()
     lbot = lens_bottom()
     la = lens_alignment()
-    lc = lens_clip(constants.LENS_GROOVE_HEIGHT, 3, math.pi/4)
+    lc = lens_clip(constants.LENS_GROOVE_HEIGHT, 2, math.pi/4)
+
+    assembly = l + lc
 
     if args.slice_v is not None or args.slice_h is not None:
         if args.slice_v is not None:
@@ -207,11 +208,13 @@ def main():
         lbot = lbot - cut
         l = l - cut
         la = la - cut
+        assembly = assembly - cut
     solid.scad_render_to_file(lc, 'lens-clip.scad')
     solid.scad_render_to_file(l, 'lens.scad')
     solid.scad_render_to_file(ltop, 'lens-top.scad')
     solid.scad_render_to_file(lbot, 'lens-bot.scad')
     solid.scad_render_to_file(la, 'lens-alignment.scad')
+    solid.scad_render_to_file(assembly, 'lens-assembly.scad')
 
     if args.export:
         export('lens', 'stl')
