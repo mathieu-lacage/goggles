@@ -14,6 +14,11 @@ SHELL_THICKNESS = 1.2
 # The half-length of the ellipsis for the lens along the horizontal axis
 ELLIPSIS_WIDTH = UNIT*2
 # The half-length of the ellipsis for the lens along the vertical axis
+# theoretically, the ratio below should be 1.33 because
+# typical human field of view ratio between vertical and horizontal field 
+# of views is 1.5:1 but I chose 1.3 (call this luck because it is 
+# pretty close to 1.333...) randomly initially and I did not want to redo
+# all my prints
 ELLIPSIS_HEIGHT = UNIT*1.3
 
 # Dimensions for the back clip to attach the goggles with a silicon band.
