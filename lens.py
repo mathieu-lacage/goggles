@@ -9,20 +9,9 @@ import mg2
 import utils
 import constants
 
-def lens_top(delta=0):
-    epsilon = 0.01
-    m2 = utils.ring(constants.LENS_GROOVE_HEIGHT+epsilon*2, -constants.LENS_GROOVE_DEPTH-constants.SKIRT_THICKNESS+delta)
-    top = utils.ring(constants.LENS_TOP_HEIGHT, -constants.SKIRT_THICKNESS+delta)
-
-    l = solid.translate([0, 0, 0])(m2) + \
-        solid.translate([0, 0, constants.LENS_GROOVE_HEIGHT])(top)
-
-    l = solid.mirror([0, 0, 1])(l)
-    l = solid.translate([0, 0, 0])(l)
-    l = solid.color("grey", 0.7)(l)
-    return l
-
 def myopia_correction(diopters, x_offset=0, y_offset=0):
+    if diopters is None:
+        return None
     assert diopters <= 4
     n2 = 1.49 # PMMA
     n1 = 1 # air
@@ -38,15 +27,28 @@ def myopia_correction(diopters, x_offset=0, y_offset=0):
 #    o = solid.debug(o)
     return o
     
+def lens_top(delta=0):
+    epsilon = 0.01
+    m2 = utils.ring(constants.LENS_GROOVE_HEIGHT+epsilon*2, -constants.LENS_GROOVE_DEPTH-constants.SKIRT_THICKNESS+delta)
+    top = utils.ring(constants.LENS_TOP_HEIGHT, -constants.SKIRT_THICKNESS+delta)
 
-def lens_bottom(delta=0):
+    l = solid.translate([0, 0, 0])(m2) + \
+        solid.translate([0, 0, constants.LENS_GROOVE_HEIGHT])(top)
+
+    l = solid.mirror([0, 0, 1])(l)
+    l = solid.translate([0, 0, 0])(l)
+    l = solid.color("grey", 0.7)(l)
+    return l
+
+def lens_bottom(correction=None, delta=0):
 #    print(2*(constants.ELLIPSIS_WIDTH-constants.SKIRT_THICKNESS), 2*(constants.ELLIPSIS_HEIGHT-constants.SKIRT_THICKNESS))
     epsilon = 0.01
     bottom = utils.ring(constants.LENS_BOTTOM_RING_HEIGHT, constants.LENS_BOTTOM_RING_WIDTH*2/3)
     m1 = utils.ring(constants.SHELL_THICKNESS+constants.SKIRT_SQUASHED_THICKNESS+epsilon, -constants.SKIRT_THICKNESS+delta)
     l = bottom
     l = l + solid.translate([0, 0, constants.LENS_BOTTOM_RING_HEIGHT-epsilon])(m1)
-    l = l - myopia_correction(2)
+    if correction is not None:
+        l = l - correction
     
 
     l = solid.mirror([0, 0, 1])(l)
@@ -54,7 +56,7 @@ def lens_bottom(delta=0):
     l = solid.color("grey", 0.7)(l)
     return l
 
-def lens():
+def lens(correction=None):
     #
     #                A------------------
     #                |      top
@@ -78,7 +80,7 @@ def lens():
     #  GH=constants.LENS_BOTTOM_RING_HEIGHT (1)
     #  Total height: 1+1+1.2+0.4+1=4.6 ??
 
-    bot = lens_bottom()
+    bot = lens_bottom(correction=correction)
     top = lens_top()
 
     l = bot
@@ -185,12 +187,16 @@ def main():
     parser.add_argument('-e', '--export', action='store_true')
     parser.add_argument('--slice-h', default=None, type=float)
     parser.add_argument('--slice-v', default=None, type=float)
+    parser.add_argument('--diopters', default=None, type=float)
+    parser.add_argument('--x-offset', default=0, type=float)
+    parser.add_argument('--y-offset', default=0, type=float)
     args = parser.parse_args()
 
     constants.NSTEPS = args.resolution
-    l = lens()
+    correction = myopia_correction(diopters=args.diopters, x_offset=args.x_offset, y_offset=args.y_offset)
+    l = lens(correction=correction)
     ltop = lens_top()
-    lbot = lens_bottom()
+    lbot = lens_bottom(correction=correction)
     la = lens_alignment()
     lc = lens_clip(constants.LENS_GROOVE_HEIGHT, 2, math.pi/4)
 
