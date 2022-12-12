@@ -223,11 +223,11 @@ def main():
     solid.scad_render_to_file(assembly, 'lens-assembly.scad')
 
     if args.export:
-        export('lens', 'stl')
-        export('lens-top', 'stl')
-        export('lens-bot', 'stl')
-        export('lens-clip', 'stl')
-        export('lens-alignment', 'stl')
+        utils.export('lens', 'stl')
+        utils.export('lens-top', 'stl')
+        utils.export('lens-bot', 'stl')
+        utils.export('lens-clip', 'stl')
+        utils.export('lens-alignment', 'stl')
 
     generate_lens_svg()
 
