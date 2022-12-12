@@ -27,13 +27,11 @@ def norm2(v):
     return math.sqrt(v.x**2+v.y**2)
 
 def perpendicular(v, left):
+    import numpy
     s = -1 if left else 1
-    if v.x == 0:
-        return Point(s*v.x, 0)
-    elif v.y == 0:
-        return Point(0, -s*v.x)
-    else:
-        return Point(s, -s*v.x/v[1])
+    z = (0, 0, s)
+    retval = numpy.cross(v, z)
+    return Point(retval[0], retval[1])
 
 def _thicker_path(path, thickness=0.05, left=True):
     n = len(path)
@@ -202,7 +200,7 @@ class Path:
         return self
 
     def offset(self, offset, left):
-        self._p = _thicker_path(self._p, thickness=offset, left=False)
+        self._p = _thicker_path(self._p, thickness=offset, left=left)
         return self
 
     def cut(self, x=None, y=None):
