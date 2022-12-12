@@ -204,6 +204,7 @@ def shell():
 
     # flip for final rendering
     o = solid.mirror([0, 1, 0])(o)
+#    o = solid.translate([0.05, 0, -0.05])(o)
 
     return o
 
@@ -294,10 +295,11 @@ def main():
     sh = shell()
     sk = skirt()
     l = lens.lens()
+#    l = solid.translate([-0.2, 0, 0.05])(l)
     lc = lens.lens_clip(constants.LENS_GROOVE_HEIGHT, 3, math.pi/4)
     bc = back_clip()
 
-    output = sk + l + lc + sh
+    output = sk + l + sh + lc
     if args.slice_v is not None or args.slice_h is not None:
         if args.slice_v is not None:
             cut = solid.rotate([0,0,args.slice_v])(solid.translate([-100,0,-100])(solid.cube([200,200,200])))
@@ -306,41 +308,19 @@ def main():
         if args.slice_h is not None:
             cut = cut + solid.translate([-100,-50,args.slice_h])(solid.cube([200,200,200]))
         lc = lc - cut
-        ltop = ltop - cut
-        lbot = lbot - cut
         sh = sh - cut
         sk = sk - cut
         l = l - cut
-        la = la - cut
         output = output - cut
     solid.scad_render_to_file(output, 'goggles.scad')
     solid.scad_render_to_file(sh, 'shell.scad')
     solid.scad_render_to_file(sk, 'skirt.scad')
     solid.scad_render_to_file(bc, 'back-clip.scad')
 
-    def export(name, type):
-        import subprocess
-        import os
-        try:
-            os.mkdir('%s-%s' % (type, args.resolution))
-        except:
-            pass
-        subprocess.check_output(['/usr/bin/openscad', '-o', '%s-%s/%s.%s' % (type, args.resolution, name, type), '%s.scad' % name])
-
     if args.export:
-        export('shell', 'stl')
-        export('skirt', 'stl')
-        export('back-clip', 'stl')
-
-def main2():
-    import subprocess
-
-    constants.NSTEPS = 400
-
-    for i in [0, -0.1, -0.2, -0.3, -0.4, -0.5, -0.6, -0.7]:
-        l = lens.lens(i)
-        solid.scad_render_to_file(l, 'lens.scad')
-        subprocess.check_output(['/usr/bin/openscad', '-o', 'lens-variants/%s.stl' % abs(i), 'lens.scad'])
+        utils.export('shell', 'stl')
+        utils.export('skirt', 'stl')
+        utils.export('back-clip', 'stl')
 
 
 main()
