@@ -45,11 +45,11 @@ def ydistance(alpha):
     return p.y
 def fwidth(alpha):
     d = distance(alpha)
-    width = max(constants.SHELL_THICKNESS, constants.MAX_WIDTH*d**7)
+    width = constants.SHELL_THICKNESS+constants.MAX_WIDTH*d**7
     return width
 def fheight(alpha):
     d = distance(alpha)
-    height = max(constants.SHELL_THICKNESS, constants.MAX_HEIGHT*d**15)
+    height = constants.SHELL_THICKNESS+constants.MAX_HEIGHT*d**15
     return height
 
 def shell_curve(alpha):
@@ -57,8 +57,7 @@ def shell_curve(alpha):
     height = fheight(alpha)
     path = mg2.Path(x=0, y=0)\
         .append(dx=width*constants.XALPHA, dy=height*constants.YALPHA)\
-        .append(dx=width*(1-constants.XALPHA), dy=height*(1-constants.YALPHA))\
-        .splinify(n=20)
+        .append(dx=width*(1-constants.XALPHA), dy=height*(1-constants.YALPHA))
     return path
 
 
@@ -99,7 +98,7 @@ def shell():
     def profile(alpha):
 
         d = distance(alpha)
-        curve = shell_curve(alpha)
+        curve = shell_curve(alpha).splinify()
 
         offset_curve = mg2.Path(path=curve)\
             .offset(constants.SHELL_THICKNESS, left=False)\
@@ -124,7 +123,7 @@ def shell():
             shell_alpha = 1-constants.TOP_ATTACHMENT_WIDTH+2*constants.TOP_ATTACHMENT_WIDTH*attachment_alpha
             alpha = (0.5-attachment_alpha)/0.5
         d = distance(shell_alpha)
-        curve = shell_curve(shell_alpha)
+        curve = shell_curve(shell_alpha).splinify()
         top = max(2*constants.UNIT/3*(1-alpha**4), constants.SHELL_THICKNESS)
         tooth_width = 2.5*constants.TOOTH_WIDTH*(1-alpha**4)
         epsilon = 0.1
@@ -162,7 +161,7 @@ def shell():
             shell_alpha = 0.5-2*constants.BOTTOM_ATTACHMENT_WIDTH*(0.5-attachment_alpha)
             alpha = (0.5-attachment_alpha)/0.5
         d = distance(shell_alpha)
-        curve = shell_curve(shell_alpha)
+        curve = shell_curve(shell_alpha).splinify()
         handle_width = constants.SHELL_THICKNESS*4*distance(attachment_alpha)**2
         handle_height = BOTTOM_ATTACHMENT_HEIGHT
         xalpha = constants.XALPHA
@@ -210,65 +209,35 @@ def shell():
 
 
 def skirt():
-    def bottom_skirt_profile(alpha):
-        silicon_skirt_height = 0.75*constants.UNIT
-        silicon_skirt_thickness = 4*constants.SHELL_THICKNESS
-        epsilon = 0.1
-        s = mg2.Path(x=0, y=0)\
-            .append(dx=-constants.SHELL_THICKNESS*3,dy=2*constants.SHELL_THICKNESS)\
-            .append(dx=constants.SHELL_THICKNESS*2,dy=silicon_skirt_height/2)\
-            .append(dx=constants.SHELL_THICKNESS*3,dy=silicon_skirt_height/2)\
-            .append(dx=-2*constants.SHELL_THICKNESS)\
-            .append(dx=-silicon_skirt_thickness, dy=-silicon_skirt_height)\
-            .rotate(alpha=0.5*distance(alpha)**12)\
-            .append(x=(-constants.SHELL_THICKNESS)-constants.SKIRT_THICKNESS, y=-constants.SKIRT_THICKNESS)\
-            .splinify()
-        return utils.eu3(s.points)
-
     def _profile(alpha):
         curve = shell_curve(alpha)
+        zero = shell_curve(0)
+        silicon_skirt_height = 0.75*constants.UNIT
+        silicon_skirt_width = constants.SHELL_TOP_X+zero.width+curve.width/3
+ 
         path = mg2.Path(path=curve)\
-            .translate(constants.SHELL_TOP_X, 0)\
-            .append(dx=constants.SHELL_THICKNESS)\
-            .append(dy=constants.SKIRT_THICKNESS)\
-            .append(dx=-constants.SHELL_THICKNESS-constants.SKIRT_THICKNESS)
-
-        skirt_top_thickness=constants.SKIRT_THICKNESS-constants.SKIRT_RING_PADDING
-        delta = mg2.Point(x=constants.SHELL_TOP_X, y=constants.SKIRT_THICKNESS) - path.points.last
-        return_path = mg2.Path(x=0, y=0)\
-            .append(dx=(1-constants.XALPHA+0.05)*delta.x, dy=(1-constants.YALPHA)*delta.y) \
-            .append(x=delta.x, y=delta.y) \
+            .translate(constants.SHELL_TOP_X, constants.SHELL_THICKNESS)\
+            .append(dy=silicon_skirt_height)\
+            .append(dx=-silicon_skirt_width)\
+            .append(dy=-silicon_skirt_height/2)\
             .splinify()
-        path = path.extend(path=return_path)\
+        return_path = path.copy().reverse().offset(constants.SKIRT_THICKNESS,left=True)
+        path.append(dx=-constants.SKIRT_THICKNESS)\
+            .extend(path=return_path)\
+            .append(x=constants.SHELL_TOP_X)\
             .append(dx=-constants.LENS_BOTTOM_RING_WIDTH)\
+            .append(dy=-constants.SHELL_THICKNESS)\
             .append(dx=-constants.SKIRT_THICKNESS)\
-            .append(dy=-constants.SKIRT_THICKNESS-constants.SHELL_THICKNESS)\
-            .extend(path=mg2.Path(x=0, y=0)\
-                .append(dx=skirt_top_thickness,dy=-constants.SKIRT_THICKNESS/2)\
-                .append(dx=skirt_top_thickness/2, dy=constants.SKIRT_THICKNESS/2)\
-                .append(dx=-skirt_top_thickness/2)\
-                .splinify()
-            )\
-            .append(dy=constants.SHELL_THICKNESS)
-        return utils.eu3(path.points)
+            .append(dy=constants.SHELL_THICKNESS+constants.SKIRT_THICKNESS)
+#            .append(dx=-constants.SKIRT_THICKNESS)
+
+        return utils.eu3(path.reversed_points)
 
     path = [utils.ellipsis(constants.ELLIPSIS_WIDTH, constants.ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(2*math.pi/constants.NSTEPS, 2*math.pi, constants.NSTEPS, include_end=False)]
     o = extrude_along_path(_profile, path, connect_ends=True)
-
-
-    epsilon = constants.SKIRT_THICKNESS/10
-    n = len(path)
-    normals = [ellipsis_perpendicular(constants.ELLIPSIS_WIDTH, constants.ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(2*math.pi/constants.NSTEPS, 2*math.pi, constants.NSTEPS, include_end=False)]
-    skirt_path = [
-        Point3(x=p.x, y=p.y, z=fheight(float(i)/(n-1))+constants.SKIRT_THICKNESS-epsilon)+normal/mg2.norm2(normal)*(constants.SHELL_TOP_X+constants.SHELL_THICKNESS+fwidth(float(i)/(n-1)))
-        for i, (p, normal) in enumerate(zip(path, normals))
-    ]
-    o = solid.color("grey")(o) + solid.color("yellow")(extrude_along_path(bottom_skirt_profile, skirt_path, connect_ends=True))
-#    for p in skirt_path:
-#        o = o + solid.translate(p)(solid.sphere(1))
     o = solid.mirror([0, 1, 0])(o)
     o = solid.translate([0, 0, 0])(o)
-#    o = solid.color("grey")(o)
+    o = solid.color("grey")(o)
     #o = solid.debug(o)
     return o
 
