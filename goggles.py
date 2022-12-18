@@ -222,7 +222,7 @@ def skirt():
             .append(dy=-silicon_skirt_height/2)\
             .splinify()
         return_path = path.copy().reverse().offset(constants.SKIRT_THICKNESS,left=True)
-        path.append(dx=-constants.SKIRT_THICKNESS)\
+        path.append_angle(alpha=-math.pi/2, delta=constants.SKIRT_THICKNESS)\
             .extend(path=return_path)\
             .append(x=constants.SHELL_TOP_X)\
             .append(dx=-constants.LENS_BOTTOM_RING_WIDTH)\
