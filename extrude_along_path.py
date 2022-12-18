@@ -92,7 +92,7 @@ def extrude_along_path( shape_pts:Points,
             transform_func = transforms[which_loop] if len(transforms) > 1 else transforms[0]
 
         if callable(shape_pts):
-            this_loop = shape_pts(which_loop/(len(path_pts)-1))
+            this_loop = shape_pts(which_loop)
             if shape_pt_count is None:
                 shape_pt_count = len(this_loop)
             else:

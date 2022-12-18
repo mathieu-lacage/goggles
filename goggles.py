@@ -94,9 +94,11 @@ def rounded_square2(x, y, height, radius, adjust=False):
 
 
 def shell():
+    TOP_ATTACHMENT_RESOLUTION = 40
+    BOTTOM_ATTACHMENT_RESOLUTION = 40
 
-    def profile(alpha):
-
+    def profile(i):
+        alpha = i/(constants.NSTEPS)
         d = distance(alpha)
         curve = shell_curve(alpha).splinify()
 
@@ -116,7 +118,8 @@ def shell():
             .extend_arc(alpha=-math.pi/2, r=constants.SKIRT_THICKNESS/2)
         return utils.eu3(path.reversed_points)
 
-    def top_attachment_profile(attachment_alpha):
+    def top_attachment_profile(i):
+        attachment_alpha = i/TOP_ATTACHMENT_RESOLUTION
         if attachment_alpha > 0.5:
             shell_alpha = 2*constants.TOP_ATTACHMENT_WIDTH*(attachment_alpha-0.5)
             alpha = (attachment_alpha - 0.5)/0.5
@@ -140,11 +143,11 @@ def shell():
         return utils.eu3(p1.reversed_points)
 
 
-    path1 = [utils.ellipsis(constants.ELLIPSIS_WIDTH, constants.ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(2*math.pi/constants.NSTEPS, 2*math.pi, constants.NSTEPS, include_end=False)]
+    path1 = [utils.ellipsis(constants.ELLIPSIS_WIDTH, constants.ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(0, 2*math.pi, constants.NSTEPS, include_end=False)]
     o = extrude_along_path(profile, path1, connect_ends=True)
 #    o = solid.debug(o)
 
-    path2 = [utils.ellipsis(constants.ELLIPSIS_WIDTH, constants.ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(-constants.TOP_ATTACHMENT_WIDTH*2*math.pi, constants.TOP_ATTACHMENT_WIDTH*2*math.pi, 40)]
+    path2 = [utils.ellipsis(constants.ELLIPSIS_WIDTH, constants.ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(-constants.TOP_ATTACHMENT_WIDTH*2*math.pi, constants.TOP_ATTACHMENT_WIDTH*2*math.pi, TOP_ATTACHMENT_RESOLUTION)]
     top_attachment = extrude_along_path(top_attachment_profile, path2)
     top_attachment = top_attachment -\
         solid.translate([constants.ELLIPSIS_WIDTH+constants.SHELL_TOP_X+constants.SHELL_THICKNESS+constants.TOOTH_WIDTH, 0, -10])(
@@ -154,7 +157,8 @@ def shell():
     o = o + top_attachment
 
     BOTTOM_ATTACHMENT_HEIGHT = 5
-    def bottom_attachment_profile(attachment_alpha):
+    def bottom_attachment_profile(i):
+        attachment_alpha = i / BOTTOM_ATTACHMENT_RESOLUTION
         if attachment_alpha > 0.5:
             shell_alpha = 0.5+2*constants.BOTTOM_ATTACHMENT_WIDTH*(attachment_alpha-0.5)
             alpha = (attachment_alpha - 0.5)/0.5
@@ -181,7 +185,7 @@ def shell():
             )
         return utils.eu3(path.reversed_points)
         
-    path3 = [utils.ellipsis(constants.ELLIPSIS_WIDTH, constants.ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(math.pi-constants.BOTTOM_ATTACHMENT_WIDTH*2*math.pi, math.pi+constants.BOTTOM_ATTACHMENT_WIDTH*2*math.pi, 40)]
+    path3 = [utils.ellipsis(constants.ELLIPSIS_WIDTH, constants.ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(math.pi-constants.BOTTOM_ATTACHMENT_WIDTH*2*math.pi, math.pi+constants.BOTTOM_ATTACHMENT_WIDTH*2*math.pi, BOTTOM_ATTACHMENT_RESOLUTION)]
     bottom_attachment = extrude_along_path(bottom_attachment_profile, path3)
 
     bah = rounded_square(constants.SHELL_BOTTOM_HOLE_HEIGHT, constants.SHELL_BOTTOM_HOLE_WIDTH, 20, constants.SHELL_THICKNESS/2)
@@ -210,7 +214,8 @@ def shell():
 
 
 def skirt():
-    def _profile(alpha):
+    def _profile(i):
+        alpha = i / constants.NSTEPS
         curve = shell_curve(alpha)
         zero = shell_curve(0)
         silicon_skirt_height = 0.75*constants.UNIT
@@ -238,7 +243,7 @@ def skirt():
 
         return utils.eu3(path.points)
 
-    path = [utils.ellipsis(constants.ELLIPSIS_WIDTH, constants.ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(2*math.pi/constants.NSTEPS, 2*math.pi, constants.NSTEPS, include_end=False)]
+    path = [utils.ellipsis(constants.ELLIPSIS_WIDTH, constants.ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(0, 2*math.pi, constants.NSTEPS, include_end=False)]
     o = extrude_along_path(_profile, path, connect_ends=True)
     o = solid.mirror([0, 1, 0])(o)
     o = solid.translate([0, 0, 0])(o)
