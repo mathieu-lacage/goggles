@@ -19,19 +19,18 @@ def _rotate(alpha):
         return [Point(x=c*p.x-s*p.y, y=s*p.x+c*p.y) for p in path]
     return inner
 
-def _arc(r, start=0, end=2*math.pi, n=40):
-    angles = solid.utils.frange(start, end, n, include_end=True)
-    return [Point(x=r*math.cos(alpha), y=r*math.sin(alpha)) for alpha in angles]
-
 def norm2(v):
     return math.sqrt(v.x**2+v.y**2)
 
-def perpendicular(v, left):
+def perpendicular(v, left, normalize=False):
     import numpy
     s = -1 if left else 1
     z = (0, 0, s)
     retval = numpy.cross(v, z)
-    return Point(retval[0], retval[1])
+    retval = Point(retval[0], retval[1])
+    if normalize:
+        retval = retval / norm2(retval)
+    return retval
 
 def _thicker_path(path, thickness=0.05, left=True):
     n = len(path)
@@ -39,8 +38,8 @@ def _thicker_path(path, thickness=0.05, left=True):
         [path[1]-path[0]] + \
         [(path[i+1]-path[i-1])/2 for i in range(1, n-1)] + \
         [path[n-1]-path[n-2]]
-    orthogonal = [perpendicular(tangents[i],left) for i in range(n)]
-    shifted = [path[i]+orthogonal[i]/norm2(orthogonal[i])*thickness for i in range(n)]
+    orthogonal = [perpendicular(tangents[i],left, normalize=True) for i in range(n)]
+    shifted = [path[i]+orthogonal[i]*thickness for i in range(n)]
     return shifted
 
 def _bezier_spline(cv, max_y=None, n=100, degree=3):
@@ -154,9 +153,16 @@ class Path:
             self._p.append(Point(x,y))
         return self
 
-    def extend_arc(self, r, start, end, n=10):
-        arc = _arc(r=r,start=start,end=end,n=n)
-        self.extend(path=arc)
+    def extend_arc(self, alpha, r, n=10):
+        assert(len(self._p) >= 2)
+        center = self._p[-1] + r * perpendicular(self._p[-1] - self._p[-2], left=alpha>0, normalize=True)
+        start = self._p[-1] - center
+        arc = []
+        for i in range(n):
+            beta = alpha/n * (i+1)
+            arc.append(center + _rotate(beta)([start])[0])
+        for p in arc:
+            self.append(point=p)
         return self
 
     def append_angle(self, alpha, delta, relative_to=None):
