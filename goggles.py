@@ -112,7 +112,8 @@ def shell():
             .extend(path=offset_curve)\
             .append(x=constants.SHELL_TOP_X, y=constants.SHELL_TOP_Y)\
             .append(dx=-constants.LENS_BOTTOM_RING_WIDTH)\
-            .append(dy=constants.SHELL_THICKNESS)
+            .append(dy=constants.SHELL_THICKNESS-constants.SKIRT_THICKNESS/2)\
+            .extend_arc(alpha=-math.pi/2, r=constants.SKIRT_THICKNESS/2)
         return utils.eu3(path.reversed_points)
 
     def top_attachment_profile(attachment_alpha):
