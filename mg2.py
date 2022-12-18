@@ -153,9 +153,11 @@ class Path:
             self._p.append(Point(x,y))
         return self
 
-    def extend_arc(self, alpha, r, n=10):
+    def extend_arc(self, alpha, r, n=10, reference=None):
         assert(len(self._p) >= 2)
-        center = self._p[-1] + r * perpendicular(self._p[-1] - self._p[-2], left=alpha>0, normalize=True)
+        if reference is None:
+            reference = self._p[-1] - self._p[-2]
+        center = self._p[-1] + r * perpendicular(reference, left=alpha>0, normalize=True)
         start = self._p[-1] - center
         arc = []
         for i in range(n):

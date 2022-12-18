@@ -109,8 +109,8 @@ def shell():
         path = mg2.Path(path=curve)\
             .translate(dx=constants.SHELL_TOP_X)\
             .label('forward_path_end')\
-            .append(dx=constants.SHELL_THICKNESS)\
-            .append_angle(alpha=-math.pi/2, delta=constants.SHELL_THICKNESS, relative_to='forward_path_end')\
+            .append(dy=constants.SHELL_THICKNESS)\
+            .extend_arc(alpha=-math.pi/2, r=constants.SHELL_THICKNESS, reference=mg2.Point(x=1, y=0))\
             .extend(path=offset_curve)\
             .append(x=constants.SHELL_TOP_X, y=constants.SHELL_TOP_Y)\
             .append(dx=-constants.LENS_BOTTOM_RING_WIDTH)\
