@@ -215,23 +215,25 @@ def skirt():
         silicon_skirt_height = 0.75*constants.UNIT
         silicon_skirt_width = constants.SHELL_TOP_X+zero.width+curve.width/3
  
-        path = mg2.Path(path=curve)\
-            .translate(constants.SHELL_TOP_X, constants.SHELL_THICKNESS)\
+        path = mg2.Path(path=curve.splinify())\
+            .translate(constants.SHELL_TOP_X, 0)
+        tmp = mg2.Path(x=0, y=0)\
             .append(dy=silicon_skirt_height)\
             .append(dx=-silicon_skirt_width)\
             .append(dy=-silicon_skirt_height/2)\
             .splinify()
-        return_path = path.copy().reverse().offset(constants.SKIRT_THICKNESS,left=True)
-        path.append_angle(alpha=-math.pi/2, delta=constants.SKIRT_THICKNESS)\
+        path.extend(path=tmp)
+        return_path = path.copy().reverse().offset(constants.SKIRT_THICKNESS, left=False)
+        path.append_angle(alpha=math.pi/2, delta=constants.SKIRT_THICKNESS)\
             .extend(path=return_path)\
             .append(x=constants.SHELL_TOP_X)\
-            .append(dx=-constants.LENS_BOTTOM_RING_WIDTH)\
-            .append(dy=-constants.SHELL_THICKNESS)\
-            .append(dx=-constants.SKIRT_THICKNESS)\
-            .append(dy=constants.SHELL_THICKNESS+constants.SKIRT_THICKNESS)
+            .append(dx=-constants.LENS_BOTTOM_RING_WIDTH-constants.SKIRT_THICKNESS)\
+            .append(dy=-constants.SHELL_THICKNESS-constants.SKIRT_THICKNESS)\
+            .append(dx=constants.SKIRT_THICKNESS)\
+            .append(dy=constants.SHELL_THICKNESS)
 #            .append(dx=-constants.SKIRT_THICKNESS)
 
-        return utils.eu3(path.reversed_points)
+        return utils.eu3(path.points)
 
     path = [utils.ellipsis(constants.ELLIPSIS_WIDTH, constants.ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(2*math.pi/constants.NSTEPS, 2*math.pi, constants.NSTEPS, include_end=False)]
     o = extrude_along_path(_profile, path, connect_ends=True)
