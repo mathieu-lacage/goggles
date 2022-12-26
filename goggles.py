@@ -234,8 +234,8 @@ def skirt():
             .extend(path=return_path)\
             .append(x=constants.SHELL_TOP_X)\
             .append(dx=-constants.LENS_BOTTOM_RING_WIDTH)\
-            .extend_arc(alpha=math.pi/2, r=constants.SKIRT_THICKNESS)\
-            .append(dy=-constants.SHELL_THICKNESS)\
+            .extend_arc(alpha=math.pi/2, r=constants.SKIRT_THICKNESS+constants.SKIRT_THICKNESS/2)\
+            .append(dy=-constants.SHELL_THICKNESS+constants.SKIRT_THICKNESS/2)\
             .append(dx=constants.SKIRT_THICKNESS)\
             .append(dy=constants.SHELL_THICKNESS-constants.SKIRT_THICKNESS/2)\
             .extend_arc(alpha=-math.pi/2, r=constants.SKIRT_THICKNESS/2)
