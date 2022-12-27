@@ -13,11 +13,8 @@ Point3Transform = Callable[[Point3, Optional[float], Optional[float]], Point3]
 # ==========================
 # = Extrusion along a path =
 # ==========================
-def extrude_along_path( shape_pts:Points, 
+def extrude_along_path( shapes_pts:Points, 
                         path_pts:Points, 
-                        scales:Sequence[Union[Vector2, float, Tuple2]] = None,
-                        rotations: Sequence[float] = None,
-                        transforms: Sequence[Point3Transform] = None,
                         connect_ends = False,
                         cap_ends = True) -> OpenSCADObject:
     '''
@@ -25,22 +22,6 @@ def extrude_along_path( shape_pts:Points,
     -- For predictable results, shape_pts must be planar, convex, and lie
     in the XY plane centered around the origin. *Some* nonconvexity (e.g, star shapes)
     and nonplanarity will generally work fine
-    
-    -- len(scales) should equal len(path_pts).  No-op if not supplied
-          Each entry may be a single number for uniform scaling, or a pair of 
-          numbers (or Point2) for differential X/Y scaling
-          If not supplied, no scaling will occur.
-          
-    -- len(rotations) should equal 1 or len(path_pts). No-op if not supplied.
-          Each point in shape_pts will be rotated by rotations[i] degrees at
-          each point in path_pts. Or, if only one rotation is supplied, the shape
-          will be rotated smoothly over rotations[0] degrees in the course of the extrusion
-    
-    -- len(transforms) should be 1 or be equal to len(path_pts).  No-op if not supplied.
-          Each entry should be have the signature: 
-             def transform_func(p:Point3, path_norm:float, loop_norm:float): Point3
-          where path_norm is in [0,1] and expresses progress through the extrusion
-          and loop_norm is in [0,1] and express progress through a single loop of the extrusion
     
     -- if connect_ends is True, the first and last loops of the extrusion will
           be joined, which is useful for toroidal geometries. Overrides cap_ends
@@ -57,14 +38,14 @@ def extrude_along_path( shape_pts:Points,
 
     # Make sure we've got Euclid Point3's for all elements
     path_pts = euclidify(path_pts, Point3)
+    shapes_pts = [euclidify(shape_pts) for shape_pts in shapes_pts]
+    assert len(path_pts) == len(shapes_pts)
+    shape_pt_count = len(shapes_pts[0])
+    for shape_pts in shapes_pts:
+        assert shape_pt_count == len(shape_pts)
 
     src_up = Vector3(0, 0, 1)
 
-    if callable(shape_pts):
-        shape_pt_count = None
-    else: 
-        shape_pts = euclidify(shape_pts, Point3)
-        shape_pt_count = len(shape_pts)
 
     tangent_path_points: List[Point3] = []
     if connect_ends:
@@ -76,35 +57,10 @@ def extrude_along_path( shape_pts:Points,
     tangents = [tangent_path_points[i+2] - tangent_path_points[i] for i in range(len(path_pts))]
 
     for which_loop in range(len(path_pts)):
-        # path_normal is 0 at the first path_pts and 1 at the last
-        path_normal = which_loop/ (len(path_pts) - 1)
-
         path_pt = path_pts[which_loop]
         tangent = tangents[which_loop]
-        scale = scales[which_loop] if scales else 1
 
-        rotate_degrees = None
-        if rotations:
-            rotate_degrees = rotations[which_loop] if len(rotations) > 1 else rotations[0] * path_normal
-
-        transform_func = None
-        if transforms:
-            transform_func = transforms[which_loop] if len(transforms) > 1 else transforms[0]
-
-        if callable(shape_pts):
-            this_loop = shape_pts(which_loop)
-            if shape_pt_count is None:
-                shape_pt_count = len(this_loop)
-            else:
-                assert len(this_loop) == shape_pt_count
-        else:
-            this_loop = shape_pts[:]
-
-        this_loop = _scale_loop(this_loop, scale)
-        this_loop = _rotate_loop(this_loop, rotate_degrees)
-        this_loop = _transform_loop(this_loop, transform_func, path_normal)
-
-        this_loop = transform_to_point(this_loop, dest_point=path_pt, dest_normal=tangent, src_up=src_up)
+        this_loop = transform_to_point(shapes_pts[which_loop], dest_point=path_pt, dest_normal=tangent, src_up=src_up)
         loop_start_index = which_loop * shape_pt_count
 
         if (which_loop < len(path_pts) - 1):
