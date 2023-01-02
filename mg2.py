@@ -107,10 +107,26 @@ class Path:
         return _Points(path=list(reversed(self._p)), labels={k: len(self._p)-v for k, v in self._labels.items()})
 
     @property
-    def height(self):
-        max_y = max(p.y for p in self._p)
+    def min_x(self):
+        min_x = min(p.x for p in self._p)
+        return min_x
+    @property
+    def max_x(self):
+        max_x = max(p.x for p in self._p)
+        return max_x
+
+    @property
+    def min_y(self):
         min_y = min(p.y for p in self._p)
-        return abs(max_y-min_y)
+        return min_y
+    @property
+    def max_y(self):
+        max_y = max(p.y for p in self._p)
+        return max_y
+
+    @property
+    def height(self):
+        return abs(self.max_y-self.min_y)
 
     @property
     def width(self):
@@ -154,9 +170,11 @@ class Path:
         return self
 
     def extend_arc(self, alpha, r, n=10, reference=None):
-        assert(len(self._p) >= 2)
         if reference is None:
+            assert(len(self._p) >= 2)
             reference = self._p[-1] - self._p[-2]
+        else:
+            assert(len(self._p) >= 1)
         center = self._p[-1] + r * perpendicular(reference, left=alpha>0, normalize=True)
         start = self._p[-1] - center
         arc = []
