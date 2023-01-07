@@ -316,12 +316,23 @@ def skirt_mold():
 
     interior_shapes = normalize_shapes(interior_shapes)
     exterior_shapes = normalize_shapes(exterior_shapes)
+    middle_shape = exterior_shapes[int(len(exterior_shapes)/4)]
     max_skirt_x = max([p.max_x for p in exterior_shapes])
     max_skirt_y = max([p.max_y for p in exterior_shapes])
+    mold_left_x = -(constants.ELLIPSIS_WIDTH + max_skirt_x)
+    mold_right_x = constants.ELLIPSIS_WIDTH + max([p.x for p in exterior_shapes[0].points])
 
+    # exterior mold bounding box
+    tmp = max([p.x for p in middle_shape.points])
+    exterior_bounding_box = solid.translate([mold_left_x-MOLD_PADDING, -tmp-2*MOLD_PADDING, -MOLD_PADDING])(solid.cube([
+        mold_right_x-mold_left_x+2*MOLD_PADDING,
+        2*tmp+4*MOLD_PADDING,
+        max_skirt_y+2*MOLD_PADDING
+    ]))
 
     # exterior mold
     a = exterior_mold(exterior_shapes, max_skirt_x, max_skirt_y)
+    a = solid.intersection()([a, exterior_bounding_box])
     bottom = a - solid.translate([-100,0,-100])(solid.cube([200,200,200]))
     top = a - solid.translate([-100,-200,-100])(solid.cube([200,200,200]))
 
@@ -347,10 +358,8 @@ def skirt_mold():
     interior_bottom = solid.intersection()([interior_tmp, interior_bottom_tmp])
 
     # pins
-    middle_shape = exterior_shapes[int(len(exterior_shapes)/4)]
-    opposite_middle_shape = exterior_shapes[int(len(exterior_shapes)*3/4)]
-    pin_left_x = -(constants.ELLIPSIS_WIDTH + max_skirt_x + MOLD_PADDING/2)
-    pin_right_x = constants.ELLIPSIS_WIDTH + max([p.x for p in exterior_shapes[0].points]) + MOLD_PADDING/2
+    pin_left_x = mold_left_x - MOLD_PADDING/2
+    pin_right_x = mold_right_x + MOLD_PADDING/2
     pin_top_z = MOLD_Y_TOP/2
     pin_middle_z = middle_shape.points[-1].y + MOLD_PADDING
     pin_bottom_z = max_skirt_y + MOLD_PADDING/2
@@ -358,7 +367,7 @@ def skirt_mold():
     pin_top_padding = 0.3
     pin_middle_padding = 1
     pin_bottom_padding = pin_middle_padding
-    pin_middle_y = constants.ELLIPSIS_HEIGHT+min(middle_shape.points[-1].x, opposite_middle_shape.points[-1].x)
+    pin_middle_y = constants.ELLIPSIS_HEIGHT+middle_shape.points[-1].x
     pin_bottom_y = pin_middle_y
     pin_topa_y = constants.ELLIPSIS_HEIGHT-interior_cone_thickness
     pin_topb_left_x = -(constants.ELLIPSIS_WIDTH-interior_cone_thickness)/2
@@ -502,8 +511,8 @@ def exterior_mold(exterior_shapes, max_skirt_x, max_skirt_y):
     output = []
     for shape in exterior_shapes:
         shape = shape.copy()
-        shape.append(y=max_skirt_y+MOLD_PADDING)
-        shape.append(x=max_skirt_x+MOLD_PADDING)
+        shape.append(y=max_skirt_y+50)
+        shape.append(x=max_skirt_x+50)
         shape.append(y=MOLD_Y_TOP)
         shape.append(x=shape.points[0].x)
         output.append(utils.eu3(shape.reversed_points))
