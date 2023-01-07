@@ -108,13 +108,18 @@ def shell():
             .reverse()
 
         path = mg2.Path(path=curve)\
-            .translate(dx=constants.SHELL_TOP_X)\
-            .label('forward_path_end')\
-            .append(dy=constants.SHELL_THICKNESS)\
-            .extend_arc(alpha=-math.pi/2, r=constants.SHELL_THICKNESS, reference=mg2.Point(x=1, y=0))\
+            .translate(dx=constants.SHELL_TOP_X)
+        p2 = path.points.last + path.normal(left=False) * constants.SHELL_THICKNESS
+        path.append(dy=constants.SHELL_THICKNESS)
+        p1 = path.points.last + mg2.Point(x=1, y=0) * constants.SHELL_THICKNESS
+        path.extend(path=mg2.Path(point=path.points.last)\
+                .append(point=p1)\
+                .append(point=p2)\
+                .splinify()\
+            )\
             .extend(path=offset_curve)\
             .append(x=constants.SHELL_TOP_X, y=constants.SHELL_TOP_Y)\
-            .append(dx=-constants.LENS_BOTTOM_RING_WIDTH)\
+            .append(x=0)\
             .append(dy=constants.SHELL_THICKNESS-constants.SKIRT_THICKNESS/2)\
             .extend_arc(alpha=-math.pi/2, r=constants.SKIRT_THICKNESS/2)
         return utils.eu3(path.reversed_points)
@@ -247,7 +252,7 @@ def skirt_profile(i, n):
     path.extend_arc(alpha=math.pi, r=constants.SKIRT_THICKNESS/2)\
         .extend(path=return_path)\
         .append(x=constants.SHELL_TOP_X)\
-        .append(dx=-constants.LENS_BOTTOM_RING_WIDTH)\
+        .append(x=0+constants.SKIRT_THICKNESS/2)\
         .extend_arc(alpha=math.pi/2, r=constants.SKIRT_THICKNESS+constants.SKIRT_THICKNESS/2)\
         .append(dy=-constants.SHELL_THICKNESS+constants.SKIRT_THICKNESS/2)\
         .append(dx=constants.SKIRT_THICKNESS)\
@@ -265,6 +270,23 @@ def skirt():
     o = solid.translate([0, 0, 0])(o)
     o = solid.color("grey")(o)
     #o = solid.debug(o)
+    return o
+
+
+def alignment_pin(x, y, z):
+    pin_height1 = 1.7
+    pin_radius1 = 2
+    pin_radius2 = 1.95
+    pin_height2 = 0.5
+    pin_radius3 = 1
+    epsilon = 0.001
+    p1 = solid.cylinder(h=pin_height1, r1=pin_radius1, r2=pin_radius2, segments=40)
+    p2 = solid.cylinder(h=pin_height2, r1=pin_radius2, r2=pin_radius3, segments=40)
+    p2 = solid.translate([0, 0, pin_height1-epsilon])(p2)
+    o = p1 + p2
+    o = solid.rotate([-90, 0, 0])(o)
+    o = solid.translate([x, y, z])(o)
+    o = solid.debug(o)
     return o
 
 
@@ -297,6 +319,7 @@ def skirt_mold():
     max_skirt_x = max([p.max_x for p in exterior_shapes])
     max_skirt_y = max([p.max_y for p in exterior_shapes])
 
+
     a = exterior_mold(exterior_shapes, max_skirt_x, max_skirt_y)
     bottom = a - solid.translate([-100,0,-100])(solid.cube([200,200,200]))
     top = a - solid.translate([-100,-200,-100])(solid.cube([200,200,200]))
@@ -310,7 +333,8 @@ def skirt_mold():
         b, 
         solid.translate([-50, -100, -100-constants.SHELL_THICKNESS+RING_GATE_LAND_THICKNESS/2])(solid.cube([100, 100, 100]))
     ])
-    interior_cone = utils.ring(200, -constants.SHELL_THICKNESS-RING_GATE_LAND_LENGTH-RING_RUNNER_RADIUS*2*2)
+    interior_cone_thickness = constants.SHELL_THICKNESS+RING_GATE_LAND_LENGTH+RING_RUNNER_RADIUS*2*2
+    interior_cone = utils.ring(200, -interior_cone_thickness)
     interior_cone = solid.translate([0, 0, -200])(interior_cone)
     interior_top_a = interior_top - interior_cone
     interior_top_b = solid.intersection()([interior_top, interior_cone])
@@ -319,6 +343,73 @@ def skirt_mold():
     interior_bottom_tmp = solid.translate([-50, -epsilon, -100-constants.SHELL_THICKNESS+RING_GATE_LAND_THICKNESS/2])(solid.cube([100, 100, 100])) - interior_cone
     interior = interior_tmp - interior_bottom_tmp
     interior_bottom = solid.intersection()([interior_tmp, interior_bottom_tmp])
+
+    # add pins
+    middle_shape = exterior_shapes[int(len(exterior_shapes)/4)]
+    opposite_middle_shape = exterior_shapes[int(len(exterior_shapes)*3/4)]
+    pin_left_x = -(constants.ELLIPSIS_WIDTH + max_skirt_x + MOLD_PADDING/2)
+    pin_right_x = constants.ELLIPSIS_WIDTH + max([p.x for p in exterior_shapes[0].points]) + MOLD_PADDING/2
+    pin_top_z = MOLD_Y_TOP/2
+    pin_middle_z = middle_shape.points[-1].y + MOLD_PADDING
+    pin_bottom_z = max_skirt_y + MOLD_PADDING/2
+    pin_top_y = constants.ELLIPSIS_HEIGHT-constants.SKIRT_THICKNESS
+    pin_top_padding = 0.3
+    pin_middle_padding = 1
+    pin_bottom_padding = pin_middle_padding
+    pin_middle_y = constants.ELLIPSIS_HEIGHT+min(middle_shape.points[-1].x, opposite_middle_shape.points[-1].x)
+    pin_bottom_y = pin_middle_y
+    pin_topa_y = constants.ELLIPSIS_HEIGHT-interior_cone_thickness
+    pin_topb_left_x = -(constants.ELLIPSIS_WIDTH-interior_cone_thickness)/2
+    pin_topb_right_x = -pin_topb_left_x
+
+    for z in [pin_top_z, pin_middle_z, pin_bottom_z]:
+        pin = alignment_pin(pin_left_x, 0-epsilon, z)
+        bottom = bottom + pin
+        top = top - pin
+    for z in [pin_top_z, pin_middle_z, pin_bottom_z]:
+        pin = alignment_pin(pin_right_x, 0-epsilon, z)
+        bottom = bottom + pin
+        top = top - pin
+
+    pin = alignment_pin(0, -pin_top_y-pin_top_padding-epsilon, pin_top_z)
+    bottom = bottom + pin
+    interior_top_a = interior_top_a - pin
+
+    pin = alignment_pin(0, -pin_middle_y-pin_middle_padding-epsilon, pin_middle_z)
+    bottom = bottom + pin
+    interior = interior - pin
+
+    pin = alignment_pin(0, -pin_bottom_y-pin_bottom_padding-epsilon, pin_bottom_z)
+    bottom = bottom + pin
+    interior = interior - pin
+
+    pin = alignment_pin(0, -pin_topa_y-epsilon, pin_top_z)
+    interior_top_a = interior_top_b + pin
+    interior_top_b = interior_top_b - pin
+
+    pin = alignment_pin(pin_topb_left_x, 0-epsilon, pin_top_z)
+    interior_top_b = interior_top_b + pin
+    interior = interior - pin
+
+    pin = alignment_pin(pin_topb_right_x, 0-epsilon, pin_top_z)
+    interior_top_b = interior_top_b + pin
+    interior = interior - pin
+
+    pin = alignment_pin(0, pin_topa_y-epsilon, pin_top_z)
+    interior = interior + pin
+    interior_bottom = interior_bottom - pin
+    
+    pin = alignment_pin(0, pin_top_y-pin_top_padding-epsilon, pin_top_z)
+    interior_bottom = interior_bottom + pin
+    top =  top - pin
+
+    pin = alignment_pin(0, pin_middle_y-pin_middle_padding-epsilon, pin_middle_z)
+    interior = interior + pin
+    top = top - pin
+
+    pin = alignment_pin(0, pin_bottom_y-pin_bottom_padding-epsilon, pin_bottom_z)
+    interior = interior + pin
+    top = top - pin
 
     return bottom, top, interior, interior_top_a, interior_top_b, interior_bottom
 
@@ -408,6 +499,7 @@ def interior_mold(interior_shapes, max_skirt_y):
 def exterior_mold(exterior_shapes, max_skirt_x, max_skirt_y):
     output = []
     for shape in exterior_shapes:
+        shape = shape.copy()
         shape.append(y=max_skirt_y+MOLD_PADDING)
         shape.append(x=max_skirt_x+MOLD_PADDING)
         shape.append(y=MOLD_Y_TOP)
@@ -448,9 +540,9 @@ def main():
     lc = lens.lens_clip(constants.LENS_GROOVE_HEIGHT, 3, math.pi/4)
     bc = back_clip()
     bottom_mold, top_mold, interior_mold, interior_mold_top_a, interior_mold_top_b, interior_mold_bottom = skirt_mold()
-    mold = bottom_mold + interior_mold + interior_mold_top_a + interior_mold_top_b + interior_mold_bottom # + top_mold
+    mold = bottom_mold + interior_mold + interior_mold_bottom
 
-    output = sk + l + sh + lc
+    output = sk + sh# + lc + l
     if args.slice_a is not None or args.slice_x is not None or args.slice_y is not None or args.slice_z is not None:
         if args.slice_a is not None:
             cut = solid.rotate([0,0,args.slice_a])(solid.translate([-100,0,-100])(solid.cube([200,200,200])))

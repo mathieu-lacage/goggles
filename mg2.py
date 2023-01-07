@@ -169,6 +169,11 @@ class Path:
             self._p.append(Point(x,y))
         return self
 
+    def normal(self, left=True):
+        assert(len(self._p) >= 2)
+        reference = self._p[-1] - self._p[-2]
+        return perpendicular(reference, left=left, normalize=True)
+
     def extend_arc(self, alpha, r, n=10, reference=None):
         if reference is None:
             assert(len(self._p) >= 2)
