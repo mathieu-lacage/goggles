@@ -346,7 +346,7 @@ def skirt_mold():
         b, 
         solid.translate([-50, -100, -100-constants.SHELL_THICKNESS+RING_GATE_LAND_THICKNESS/2])(solid.cube([100, 100, 100]))
     ])
-    interior_cone_thickness = constants.SHELL_THICKNESS+RING_GATE_LAND_LENGTH+RING_RUNNER_RADIUS*2*2
+    interior_cone_thickness = constants.SKIRT_THICKNESS+RING_GATE_LAND_LENGTH+RING_RUNNER_RADIUS*2*2
     interior_cone = utils.ring(200, -interior_cone_thickness)
     interior_cone = solid.translate([0, 0, -200])(interior_cone)
     interior_top_a = interior_top - interior_cone
@@ -369,7 +369,7 @@ def skirt_mold():
     pin_bottom_padding = pin_middle_padding
     pin_middle_y = constants.ELLIPSIS_HEIGHT+middle_shape.points[-1].x
     pin_bottom_y = pin_middle_y
-    pin_topa_y = constants.ELLIPSIS_HEIGHT-interior_cone_thickness
+    pin_topa_y = constants.ELLIPSIS_HEIGHT-interior_cone_thickness-0.1 # XXX: not sure why I need a -0.1 here
     pin_topb_left_x = -(constants.ELLIPSIS_WIDTH-interior_cone_thickness)/2
     pin_topb_right_x = -pin_topb_left_x
 
@@ -395,7 +395,7 @@ def skirt_mold():
     interior = interior - pin
 
     pin = alignment_pin(0, -pin_topa_y-epsilon, pin_top_z)
-    interior_top_a = interior_top_b + pin
+    interior_top_a = interior_top_a + pin
     interior_top_b = interior_top_b - pin
 
     pin = alignment_pin(pin_topb_left_x, 0-epsilon, pin_top_z)
@@ -407,6 +407,7 @@ def skirt_mold():
     interior = interior - pin
 
     pin = alignment_pin(0, pin_topa_y-epsilon, pin_top_z)
+#    pin = solid.debug(pin)
     interior = interior + pin
     interior_bottom = interior_bottom - pin
     
@@ -574,6 +575,9 @@ def main():
         bottom_mold = bottom_mold - cut
         top_mold = top_mold - cut
         interior_mold = interior_mold - cut
+        interior_mold_top_a = interior_mold_top_a - cut
+        interior_mold_top_b = interior_mold_top_b - cut
+        interior_mold_bottom = interior_mold_bottom - cut
         mold = mold - cut
         output = output - cut
 
