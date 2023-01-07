@@ -4,6 +4,7 @@ import numpy as np
 import scipy.interpolate as si
 import euclid3
 import solid.utils
+import shapely
 
 Point = euclid3.Point2
 
@@ -18,6 +19,10 @@ def _rotate(alpha):
         s = math.sin(alpha)
         return [Point(x=c*p.x-s*p.y, y=s*p.x+c*p.y) for p in path]
     return inner
+
+def _argmin(l, key=lambda i:i):
+    m = min(enumerate(l), key=lambda item: key(item[1]))
+    return m[0]
 
 def norm2(v):
     return math.sqrt(v.x**2+v.y**2)
@@ -41,6 +46,17 @@ def _thicker_path(path, thickness=0.05, left=True):
     orthogonal = [perpendicular(tangents[i],left, normalize=True) for i in range(n)]
     shifted = [path[i]+orthogonal[i]*thickness for i in range(n)]
     return shifted
+
+def _thicker_path2(path, thickness=0.05, left=True):
+    line = shapely.LineString([(p.x, p.y) for p in path])
+    offset = line.offset_curve(thickness if left else -thickness)
+    retval = []
+    # this is a bad n^2 algorithm but it works
+    for i in path:
+        k = _argmin([norm2(Point(x=j[0], y=j[1]) - i) for j in offset.coords])
+        selected = offset.coords[k]
+        retval.append(Point(x=selected[0], y=selected[1]))
+    return retval
 
 def _bezier_spline(cv, max_y=None, n=100, degree=3):
     cv = np.asarray([[p.x, p.y] for p in cv])
@@ -231,7 +247,7 @@ class Path:
         return self
 
     def offset(self, offset, left):
-        self._p = _thicker_path(self._p, thickness=offset, left=left)
+        self._p = _thicker_path2(self._p, thickness=offset, left=left)
         return self
 
     def cut(self, x=None, y=None):

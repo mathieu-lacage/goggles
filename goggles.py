@@ -286,7 +286,7 @@ def alignment_pin(x, y, z):
     o = p1 + p2
     o = solid.rotate([-90, 0, 0])(o)
     o = solid.translate([x, y, z])(o)
-    o = solid.debug(o)
+#    o = solid.debug(o)
     return o
 
 
@@ -500,8 +500,10 @@ def interior_mold(interior_shapes, max_skirt_y):
     o = extrude_along_path(output, path, connect_ends=True)
     o = o - air_vent
 
-    filler = utils.ring(max_skirt_y-MOLD_Y_TOP+MOLD_PADDING, -constants.SHELL_THICKNESS)
-    filler = solid.translate([0, 0, -MOLD_PADDING])(filler)
+    epsilon = 0.01
+    filler = utils.ring(max_skirt_y-MOLD_Y_TOP+MOLD_PADDING+2*epsilon, -constants.SKIRT_THICKNESS-1)
+    filler = solid.translate([0, 0, -MOLD_PADDING-epsilon])(filler)
+#    filler = solid.debug(filler)
     o = o + filler
 
     return o
