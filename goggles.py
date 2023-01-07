@@ -320,15 +320,17 @@ def skirt_mold():
     max_skirt_y = max([p.max_y for p in exterior_shapes])
 
 
+    # exterior mold
     a = exterior_mold(exterior_shapes, max_skirt_x, max_skirt_y)
     bottom = a - solid.translate([-100,0,-100])(solid.cube([200,200,200]))
     top = a - solid.translate([-100,-200,-100])(solid.cube([200,200,200]))
-    b = interior_mold(interior_shapes, max_skirt_y)
 
+    # basic interior mold with feeder holes
+    b = interior_mold(interior_shapes, max_skirt_y)
     c = feeder(exterior_shapes[0].points[0], exterior_shapes[int(constants.NSTEPS/2)].points[0])
     b = b - c
 
-
+    # split interior mold in 4 parts
     interior_top = solid.intersection()([
         b, 
         solid.translate([-50, -100, -100-constants.SHELL_THICKNESS+RING_GATE_LAND_THICKNESS/2])(solid.cube([100, 100, 100]))
@@ -344,7 +346,7 @@ def skirt_mold():
     interior = interior_tmp - interior_bottom_tmp
     interior_bottom = solid.intersection()([interior_tmp, interior_bottom_tmp])
 
-    # add pins
+    # pins
     middle_shape = exterior_shapes[int(len(exterior_shapes)/4)]
     opposite_middle_shape = exterior_shapes[int(len(exterior_shapes)*3/4)]
     pin_left_x = -(constants.ELLIPSIS_WIDTH + max_skirt_x + MOLD_PADDING/2)
