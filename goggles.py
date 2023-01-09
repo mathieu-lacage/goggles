@@ -274,6 +274,7 @@ def skirt():
 
 
 def alignment_pin(x, y, z):
+    Pin = collections.namedtuple('Pin', ['male', 'female'])
     pin_height1 = 1.7
     pin_radius1 = 2
     pin_radius2 = 1.95
@@ -287,7 +288,7 @@ def alignment_pin(x, y, z):
     o = solid.rotate([-90, 0, 0])(o)
     o = solid.translate([x, y, z])(o)
 #    o = solid.debug(o)
-    return o
+    return Pin(male=o, female=o)
 
 
 MOLD_PADDING = 10
@@ -375,53 +376,52 @@ def skirt_mold():
 
     for z in [pin_top_z, pin_middle_z, pin_bottom_z]:
         pin = alignment_pin(pin_left_x, 0-epsilon, z)
-        bottom = bottom + pin
-        top = top - pin
+        bottom = bottom + pin.male
+        top = top - pin.female
     for z in [pin_top_z, pin_middle_z, pin_bottom_z]:
         pin = alignment_pin(pin_right_x, 0-epsilon, z)
-        bottom = bottom + pin
-        top = top - pin
+        bottom = bottom + pin.male
+        top = top - pin.female
 
     pin = alignment_pin(0, -pin_top_y-pin_top_padding-epsilon, pin_top_z)
-    bottom = bottom + pin
-    interior_top_a = interior_top_a - pin
+    bottom = bottom + pin.male
+    interior_top_a = interior_top_a - pin.female
 
     pin = alignment_pin(0, -pin_middle_y-pin_middle_padding-epsilon, pin_middle_z)
-    bottom = bottom + pin
-    interior = interior - pin
+    bottom = bottom + pin.male
+    interior = interior - pin.female
 
     pin = alignment_pin(0, -pin_bottom_y-pin_bottom_padding-epsilon, pin_bottom_z)
-    bottom = bottom + pin
-    interior = interior - pin
+    bottom = bottom + pin.male
+    interior = interior - pin.female
 
     pin = alignment_pin(0, -pin_topa_y-epsilon, pin_top_z)
-    interior_top_a = interior_top_a + pin
-    interior_top_b = interior_top_b - pin
+    interior_top_a = interior_top_a + pin.male
+    interior_top_b = interior_top_b - pin.female
 
     pin = alignment_pin(pin_topb_left_x, 0-epsilon, pin_top_z)
-    interior_top_b = interior_top_b + pin
-    interior = interior - pin
+    interior_top_b = interior_top_b + pin.male
+    interior = interior - pin.female
 
     pin = alignment_pin(pin_topb_right_x, 0-epsilon, pin_top_z)
-    interior_top_b = interior_top_b + pin
-    interior = interior - pin
+    interior_top_b = interior_top_b + pin.male
+    interior = interior - pin.female
 
     pin = alignment_pin(0, pin_topa_y-epsilon, pin_top_z)
-#    pin = solid.debug(pin)
-    interior = interior + pin
-    interior_bottom = interior_bottom - pin
+    interior = interior + pin.male
+    interior_bottom = interior_bottom - pin.female
     
     pin = alignment_pin(0, pin_top_y-pin_top_padding-epsilon, pin_top_z)
-    interior_bottom = interior_bottom + pin
-    top =  top - pin
+    interior_bottom = interior_bottom + pin.male
+    top =  top - pin.female
 
     pin = alignment_pin(0, pin_middle_y-pin_middle_padding-epsilon, pin_middle_z)
-    interior = interior + pin
-    top = top - pin
+    interior = interior + pin.male
+    top = top - pin.female
 
     pin = alignment_pin(0, pin_bottom_y-pin_bottom_padding-epsilon, pin_bottom_z)
-    interior = interior + pin
-    top = top - pin
+    interior = interior + pin.male
+    top = top - pin.female
 
     return bottom, top, interior, interior_top_a, interior_top_b, interior_bottom
 
