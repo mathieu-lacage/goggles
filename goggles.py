@@ -275,20 +275,25 @@ def skirt():
 
 def alignment_pin(x, y, z):
     Pin = collections.namedtuple('Pin', ['male', 'female'])
-    pin_height1 = 1.7
-    pin_radius1 = 2
-    pin_radius2 = 1.95
-    pin_height2 = 0.5
-    pin_radius3 = 1
+    pin_height = 3
+    pin_radius = 1.5
     epsilon = 0.001
-    p1 = solid.cylinder(h=pin_height1, r1=pin_radius1, r2=pin_radius2, segments=40)
-    p2 = solid.cylinder(h=pin_height2, r1=pin_radius2, r2=pin_radius3, segments=40)
-    p2 = solid.translate([0, 0, pin_height1-epsilon])(p2)
-    o = p1 + p2
-    o = solid.rotate([-90, 0, 0])(o)
-    o = solid.translate([x, y, z])(o)
-#    o = solid.debug(o)
-    return Pin(male=o, female=o)
+    def pin(height, radius):
+        filet_radius = 0.5
+        profile = mg2.Path(x=radius, y=0)\
+            .append(dy=height-filet_radius)\
+            .extend_arc(alpha=math.pi/2, r=filet_radius)
+        path = [euclid3.Point3(x=math.cos(t), y=math.sin(t), z = 0) for t in solid.utils.frange(0, 2*math.pi, constants.NSTEPS, include_end=False)]
+        shapes = [utils.eu3(profile.points) for i in range(len(path))]
+        o = extrude_along_path(shapes, path, connect_ends=True)
+        o = solid.hull()(o)
+        o = solid.rotate([-90, 0, 0])(o)
+        return o
+    male = pin(pin_height, pin_radius)
+    female = pin(pin_height+0.1, pin_radius+0.1)
+    male = solid.translate([x, y, z])(male)
+    female = solid.translate([x, y, z])(female)
+    return Pin(male=male, female=female)
 
 
 MOLD_PADDING = 10
