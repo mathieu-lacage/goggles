@@ -17,7 +17,7 @@ def myopia_correction(diopters, x_offset=0, y_offset=0):
     n1 = 1 # air
     # lens maker equation applied to a plano-concave lens
     R1 = (n2/n1 - 1) / diopters
-     # convert meters to millimeters
+    # convert meters to millimeters
     R1 = R1*1000
 
     max_half_width = max(constants.ELLIPSIS_WIDTH, constants.ELLIPSIS_HEIGHT)-constants.SKIRT_THICKNESS+max(math.fabs(x_offset), math.fabs(y_offset))
