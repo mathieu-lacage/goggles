@@ -298,10 +298,10 @@ def alignment_pin(x, y, z):
 
 MOLD_PADDING = 10
 MOLD_Y_TOP = -MOLD_PADDING
-SPRUE_TOP_RADIUS = 1
+SPRUE_TOP_RADIUS = 1.5
 SPRUE_BOT_RADIUS = 2
 SPRUE_SLUG_LENGTH = 2
-SPRUE_HEIGHT = 15
+SPRUE_HEIGHT = MOLD_PADDING+2
 RING_RUNNER_RADIUS = 1
 RING_GATE_LAND_LENGTH = 0.5
 RING_GATE_LAND_THICKNESS = 0.5
@@ -443,7 +443,12 @@ def normalize_shapes(shapes):
 def feeder(a, b):
     FEEDER_RUNNER_LENGTH = constants.ELLIPSIS_WIDTH*2-constants.LENS_BOTTOM_RING_WIDTH-3/2*constants.SKIRT_THICKNESS-RING_GATE_LAND_LENGTH-RING_RUNNER_RADIUS
     FEEDER_RUNNER_RADIUS = RING_RUNNER_RADIUS
+    NOZZLE_TOP_RADIUS = 5
+    NOZZLE_BOT_RADIUS = 2
+    NOZZLE_HEIGHT = 10
 
+    nozzle = solid.cylinder(h=NOZZLE_HEIGHT, r1=NOZZLE_TOP_RADIUS, r2=NOZZLE_BOT_RADIUS, segments=20)
+    nozzle = solid.translate([0, 0, -SPRUE_HEIGHT-constants.SHELL_THICKNESS+SPRUE_SLUG_LENGTH-0.8*NOZZLE_HEIGHT])(nozzle)
     sprue = solid.cylinder(h=SPRUE_HEIGHT, r1=SPRUE_TOP_RADIUS, r2=SPRUE_BOT_RADIUS, segments=20)
     sprue = solid.translate([0, 0, -SPRUE_HEIGHT-constants.SHELL_THICKNESS+SPRUE_SLUG_LENGTH])(sprue)
     feeder_runner = solid.cylinder(h=FEEDER_RUNNER_LENGTH, r=FEEDER_RUNNER_RADIUS, segments=20)
@@ -473,7 +478,7 @@ def feeder(a, b):
     ring_runner_shapes = [ring_runner_profile(i, len(path)) for i in range(len(path))]
     ring_runner = extrude_along_path(ring_runner_shapes, path, connect_ends=True)
     
-    return sprue + ring_gate + ring_runner + feeder_runner
+    return nozzle + sprue + ring_gate + ring_runner + feeder_runner
 
 
 def interior_mold(interior_shapes, max_skirt_y):
