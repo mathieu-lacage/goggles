@@ -335,6 +335,19 @@ def skirt_mold():
         2*tmp+4*MOLD_PADDING,
         max_skirt_y+2*MOLD_PADDING
     ]))
+    screw_y_thickness = 4
+    screw_x_thickness = MOLD_PADDING/2
+    screw_z_thickness = 8
+    screwdriver = solid.cube([screw_x_thickness, screw_y_thickness, screw_z_thickness], center=True)
+#    screwdriver = solid.debug(screwdriver)
+    screw_left_x = mold_left_x-MOLD_PADDING
+    screw_right_x = mold_right_x+MOLD_PADDING
+    screw_top_z = (max_skirt_y+2*MOLD_PADDING)/4 - MOLD_PADDING
+    screw_bot_z = 3*(max_skirt_y+2*MOLD_PADDING)/4 - MOLD_PADDING
+    exterior_bounding_box = exterior_bounding_box - solid.translate([screw_left_x, 0, screw_top_z])(screwdriver)
+    exterior_bounding_box = exterior_bounding_box - solid.translate([screw_left_x, 0, screw_bot_z])(screwdriver)
+    exterior_bounding_box = exterior_bounding_box - solid.translate([screw_right_x, 0, screw_top_z])(screwdriver)
+    exterior_bounding_box = exterior_bounding_box - solid.translate([screw_right_x, 0, screw_bot_z])(screwdriver)
 
     # exterior mold
     a = exterior_mold(exterior_shapes, max_skirt_x, max_skirt_y)
