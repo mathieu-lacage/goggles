@@ -454,7 +454,7 @@ def normalize_shapes(shapes):
 
 
 def feeder(a, b):
-    FEEDER_RUNNER_LENGTH = constants.ELLIPSIS_WIDTH*2-constants.LENS_BOTTOM_RING_WIDTH-3/2*constants.SKIRT_THICKNESS-RING_GATE_LAND_LENGTH-RING_RUNNER_RADIUS
+    FEEDER_RUNNER_LENGTH = 2*(constants.ELLIPSIS_WIDTH-constants.SKIRT_THICKNESS-RING_GATE_LAND_LENGTH-RING_RUNNER_RADIUS)
     FEEDER_RUNNER_RADIUS = RING_RUNNER_RADIUS
     NOZZLE_TOP_RADIUS = 8
     NOZZLE_BOT_RADIUS = 2
@@ -471,10 +471,11 @@ def feeder(a, b):
     def ring_gate_profile(i, n):
         alpha = i / n
         epsilon = 0.001
-        p = mg2.Path(x=-3/2*constants.SKIRT_THICKNESS+epsilon, y=-constants.SHELL_THICKNESS)\
-            .append(dx=-RING_GATE_LAND_LENGTH-epsilon)\
+        gate_land_length = RING_GATE_LAND_LENGTH + RING_RUNNER_RADIUS
+        p = mg2.Path(x=-constants.SKIRT_THICKNESS+epsilon, y=-constants.SHELL_THICKNESS)\
+            .append(dx=-gate_land_length-epsilon)\
             .append(dy=RING_GATE_LAND_THICKNESS)\
-            .append(dx=RING_GATE_LAND_LENGTH+epsilon*2)
+            .append(dx=gate_land_length+epsilon*2)
         return utils.eu3(p.reversed_points)
     path = ellipsis_path()
     ring_gate_shapes = [ring_gate_profile(i, len(path)) for i in range(len(path))]
@@ -483,8 +484,7 @@ def feeder(a, b):
     def ring_runner_profile(i, n):
         alpha = i / n
         epsilon = 0.001
-        offset = RING_RUNNER_RADIUS-math.sqrt(RING_RUNNER_RADIUS**2-(RING_GATE_LAND_THICKNESS/2)**2)
-        p = mg2.Path(x=-3/2*constants.SKIRT_THICKNESS-RING_GATE_LAND_LENGTH+offset+epsilon, y=-constants.SHELL_THICKNESS+RING_GATE_LAND_THICKNESS/2)\
+        p = mg2.Path(x=-constants.SKIRT_THICKNESS-RING_GATE_LAND_LENGTH+epsilon, y=-constants.SHELL_THICKNESS+RING_GATE_LAND_THICKNESS/2)\
             .extend_arc(alpha=2*math.pi, r=RING_RUNNER_RADIUS, reference=mg2.Point(x=0, y=1), n=20)
         return utils.eu3(p.points)
     path = ellipsis_path()
