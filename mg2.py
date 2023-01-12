@@ -4,6 +4,7 @@ import numpy as np
 import scipy.interpolate as si
 import euclid3
 import solid.utils
+import shapely
 
 Point = euclid3.Point2
 
@@ -19,21 +20,22 @@ def _rotate(alpha):
         return [Point(x=c*p.x-s*p.y, y=s*p.x+c*p.y) for p in path]
     return inner
 
-def _arc(r, start=0, end=2*math.pi, n=40):
-    angles = solid.utils.frange(start, end, n, include_end=True)
-    return [Point(x=r*math.cos(alpha), y=r*math.sin(alpha)) for alpha in angles]
+def _argmin(l, key=lambda i:i):
+    m = min(enumerate(l), key=lambda item: key(item[1]))
+    return m[0]
 
 def norm2(v):
     return math.sqrt(v.x**2+v.y**2)
 
-def perpendicular(v, left):
+def perpendicular(v, left, normalize=False):
+    import numpy
     s = -1 if left else 1
-    if v.x == 0:
-        return Point(s*v.x, 0)
-    elif v.y == 0:
-        return Point(0, -s*v.x)
-    else:
-        return Point(s, -s*v.x/v[1])
+    z = (0, 0, s)
+    retval = numpy.cross(v, z)
+    retval = Point(retval[0], retval[1])
+    if normalize:
+        retval = retval / norm2(retval)
+    return retval
 
 def _thicker_path(path, thickness=0.05, left=True):
     n = len(path)
@@ -41,9 +43,20 @@ def _thicker_path(path, thickness=0.05, left=True):
         [path[1]-path[0]] + \
         [(path[i+1]-path[i-1])/2 for i in range(1, n-1)] + \
         [path[n-1]-path[n-2]]
-    orthogonal = [perpendicular(tangents[i],left) for i in range(n)]
-    shifted = [path[i]+orthogonal[i]/norm2(orthogonal[i])*thickness for i in range(n)]
+    orthogonal = [perpendicular(tangents[i],left, normalize=True) for i in range(n)]
+    shifted = [path[i]+orthogonal[i]*thickness for i in range(n)]
     return shifted
+
+def _thicker_path2(path, thickness=0.05, left=True):
+    line = shapely.LineString([(p.x, p.y) for p in path])
+    offset = line.offset_curve(thickness if left else -thickness)
+    retval = []
+    # this is a bad n^2 algorithm but it works
+    for i in path:
+        k = _argmin([norm2(Point(x=j[0], y=j[1]) - i) for j in offset.coords])
+        selected = offset.coords[k]
+        retval.append(Point(x=selected[0], y=selected[1]))
+    return retval
 
 def _bezier_spline(cv, max_y=None, n=100, degree=3):
     cv = np.asarray([[p.x, p.y] for p in cv])
@@ -110,10 +123,26 @@ class Path:
         return _Points(path=list(reversed(self._p)), labels={k: len(self._p)-v for k, v in self._labels.items()})
 
     @property
-    def height(self):
-        max_y = max(p.y for p in self._p)
+    def min_x(self):
+        min_x = min(p.x for p in self._p)
+        return min_x
+    @property
+    def max_x(self):
+        max_x = max(p.x for p in self._p)
+        return max_x
+
+    @property
+    def min_y(self):
         min_y = min(p.y for p in self._p)
-        return abs(max_y-min_y)
+        return min_y
+    @property
+    def max_y(self):
+        max_y = max(p.y for p in self._p)
+        return max_y
+
+    @property
+    def height(self):
+        return abs(self.max_y-self.min_y)
 
     @property
     def width(self):
@@ -156,9 +185,25 @@ class Path:
             self._p.append(Point(x,y))
         return self
 
-    def extend_arc(self, r, start, end, n=10):
-        arc = _arc(r=r,start=start,end=end,n=n)
-        self.extend(path=arc)
+    def normal(self, left=True):
+        assert(len(self._p) >= 2)
+        reference = self._p[-1] - self._p[-2]
+        return perpendicular(reference, left=left, normalize=True)
+
+    def extend_arc(self, alpha, r, n=10, reference=None):
+        if reference is None:
+            assert(len(self._p) >= 2)
+            reference = self._p[-1] - self._p[-2]
+        else:
+            assert(len(self._p) >= 1)
+        center = self._p[-1] + r * perpendicular(reference, left=alpha>0, normalize=True)
+        start = self._p[-1] - center
+        arc = []
+        for i in range(n):
+            beta = alpha/n * (i+1)
+            arc.append(center + _rotate(beta)([start])[0])
+        for p in arc:
+            self.append(point=p)
         return self
 
     def append_angle(self, alpha, delta, relative_to=None):
@@ -202,7 +247,7 @@ class Path:
         return self
 
     def offset(self, offset, left):
-        self._p = _thicker_path(self._p, thickness=offset, left=False)
+        self._p = _thicker_path2(self._p, thickness=offset, left=left)
         return self
 
     def cut(self, x=None, y=None):
