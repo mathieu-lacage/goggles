@@ -329,12 +329,13 @@ def skirt_mold():
     mold_right_x = constants.ELLIPSIS_WIDTH + max([p.x for p in exterior_shapes[0].points])
 
     # exterior mold bounding box
-    tmp = max([p.x for p in middle_shape.points])
-    exterior_bounding_box = solid.translate([mold_left_x-MOLD_PADDING, -tmp-2*MOLD_PADDING, -MOLD_PADDING])(solid.cube([
+    skirt_extent_y = max([p.x for p in middle_shape.points]) + MOLD_PADDING # This is a rough approximation
+    exterior_bounding_box = solid.translate([mold_left_x-MOLD_PADDING, -skirt_extent_y-MOLD_PADDING, -MOLD_PADDING])(solid.cube([
         mold_right_x-mold_left_x+2*MOLD_PADDING,
-        2*tmp+4*MOLD_PADDING,
+        2*(skirt_extent_y+MOLD_PADDING),
         max_skirt_y+2*MOLD_PADDING
     ]))
+    # screw holes to open mold
     screw_y_thickness = 4
     screw_x_thickness = MOLD_PADDING/2
     screw_z_thickness = 8
@@ -348,6 +349,18 @@ def skirt_mold():
     exterior_bounding_box = exterior_bounding_box - solid.translate([screw_left_x, 0, screw_bot_z])(screwdriver)
     exterior_bounding_box = exterior_bounding_box - solid.translate([screw_right_x, 0, screw_top_z])(screwdriver)
     exterior_bounding_box = exterior_bounding_box - solid.translate([screw_right_x, 0, screw_bot_z])(screwdriver)
+    # chamfer to release mold from printer bed
+    printer_bed_chamfer_w_h = 5
+    tmp = solid.cube([printer_bed_chamfer_w_h, printer_bed_chamfer_w_h, 400], center=True)
+    tmp = solid.rotate([0, 0, 45])(tmp)
+    for x in [screw_left_x, screw_right_x]:
+        exterior_bounding_box = exterior_bounding_box - solid.translate([x, skirt_extent_y+MOLD_PADDING, 0])(tmp)
+        exterior_bounding_box = exterior_bounding_box - solid.translate([x, -skirt_extent_y-MOLD_PADDING, 0])(tmp)
+    tmp = solid.cube([200, printer_bed_chamfer_w_h, printer_bed_chamfer_w_h], center=True)
+    tmp = solid.rotate([45, 0, 0])(tmp)
+    for z in [-MOLD_PADDING, max_skirt_y+MOLD_PADDING]:
+        exterior_bounding_box = exterior_bounding_box - solid.translate([0, skirt_extent_y+MOLD_PADDING, z])(tmp)
+        exterior_bounding_box = exterior_bounding_box - solid.translate([0, -skirt_extent_y-MOLD_PADDING, z])(tmp)
 
     # exterior mold
     a = exterior_mold(exterior_shapes, max_skirt_x, max_skirt_y)
