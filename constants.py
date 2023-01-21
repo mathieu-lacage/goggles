@@ -30,13 +30,13 @@ BACK_CLIP_RADIUS = BACK_CLIP_THICKNESS/2
 # Thickness of the skirt. The code does not generate
 # a model which a constant skirt thickness but the thickness
 # should be, on average, pretty close to this.
-SKIRT_THICKNESS = 0.6
+SKIRT_THICKNESS = 1
 # Thickness of the skirt material when it is
 # compressed by the lens. Increase if the material you use
 # allows it (it is still possible to assemble the body, skirt, 
 # lens, and clip) and if you want to increase the probability
 # of having a waterproof skirt. When I made this value
-# small than SKIRT_THICKNESS, I have never been able to assemble
+# smaller than SKIRT_THICKNESS, I have never been able to assemble
 # the skirt with the other pieces.
 SKIRT_SQUASHED_THICKNESS = SKIRT_THICKNESS
 SKIRT_RING_PADDING=0
