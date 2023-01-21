@@ -362,32 +362,18 @@ def skirt_mold():
         exterior_bounding_box = exterior_bounding_box - solid.translate([0, skirt_extent_y+MOLD_PADDING, z])(tmp)
         exterior_bounding_box = exterior_bounding_box - solid.translate([0, -skirt_extent_y-MOLD_PADDING, z])(tmp)
 
+    feeding = feeder(exterior_shapes[0].points[0], exterior_shapes[int(constants.NSTEPS/2)].points[0])
+
     # exterior mold
     a = exterior_mold(exterior_shapes, max_skirt_x, max_skirt_y)
+    a = a - feeding
     a = solid.intersection()([a, exterior_bounding_box])
     bottom = a - solid.translate([-100,0,-100])(solid.cube([200,200,200]))
     top = a - solid.translate([-100,-200,-100])(solid.cube([200,200,200]))
 
-    # basic interior mold with feeder holes
-    b = interior_mold(interior_shapes, max_skirt_y)
-    c = feeder(exterior_shapes[0].points[0], exterior_shapes[int(constants.NSTEPS/2)].points[0])
-    b = b - c
-
-    # split interior mold in 4 parts
-    interior_top = solid.intersection()([
-        b, 
-        solid.translate([-50, -100, -100-constants.SHELL_THICKNESS+RING_GATE_LAND_THICKNESS/2])(solid.cube([100, 100, 100]))
-    ])
-    interior_cone_thickness = constants.SKIRT_THICKNESS+RING_GATE_LAND_LENGTH+RING_RUNNER_RADIUS*2*2
-    interior_cone = utils.ring(200, -interior_cone_thickness)
-    interior_cone = solid.translate([0, 0, -200])(interior_cone)
-    interior_top_a = interior_top - interior_cone
-    interior_top_b = solid.intersection()([interior_top, interior_cone])
-
-    interior_tmp = b - solid.translate([-50, -100, -100-constants.SHELL_THICKNESS+RING_GATE_LAND_THICKNESS/2])(solid.cube([100, 100, 100]))
-    interior_bottom_tmp = solid.translate([-50, -epsilon, -100-constants.SHELL_THICKNESS+RING_GATE_LAND_THICKNESS/2])(solid.cube([100, 100, 100])) - interior_cone
-    interior = interior_tmp - interior_bottom_tmp
-    interior_bottom = solid.intersection()([interior_tmp, interior_bottom_tmp])
+    # interior mold
+    interior = interior_mold(interior_shapes, max_skirt_y)
+    interior = interior - feeding
 
     # pins
     pin_left_x = mold_left_x - MOLD_PADDING/2
@@ -401,9 +387,6 @@ def skirt_mold():
     pin_bottom_padding = pin_middle_padding
     pin_middle_y = constants.ELLIPSIS_HEIGHT+middle_shape.points[-1].x
     pin_bottom_y = pin_middle_y
-    pin_topa_y = constants.ELLIPSIS_HEIGHT-interior_cone_thickness-0.1 # XXX: not sure why I need a -0.1 here
-    pin_topb_left_x = -(constants.ELLIPSIS_WIDTH-interior_cone_thickness)/2
-    pin_topb_right_x = -pin_topb_left_x
 
     for z in [pin_top_z, pin_middle_z, pin_bottom_z]:
         pin = alignment_pin(pin_left_x, 0-epsilon, z)
@@ -414,10 +397,6 @@ def skirt_mold():
         bottom = bottom + pin.male
         top = top - pin.female
 
-    pin = alignment_pin(0, -pin_top_y-pin_top_padding-epsilon, pin_top_z)
-    bottom = bottom + pin.male
-    interior_top_a = interior_top_a - pin.female
-
     pin = alignment_pin(0, -pin_middle_y-pin_middle_padding-epsilon, pin_middle_z)
     bottom = bottom + pin.male
     interior = interior - pin.female
@@ -425,26 +404,6 @@ def skirt_mold():
     pin = alignment_pin(0, -pin_bottom_y-pin_bottom_padding-epsilon, pin_bottom_z)
     bottom = bottom + pin.male
     interior = interior - pin.female
-
-    pin = alignment_pin(0, -pin_topa_y-epsilon, pin_top_z)
-    interior_top_a = interior_top_a + pin.male
-    interior_top_b = interior_top_b - pin.female
-
-    pin = alignment_pin(pin_topb_left_x, 0-epsilon, pin_top_z)
-    interior_top_b = interior_top_b + pin.male
-    interior = interior - pin.female
-
-    pin = alignment_pin(pin_topb_right_x, 0-epsilon, pin_top_z)
-    interior_top_b = interior_top_b + pin.male
-    interior = interior - pin.female
-
-    pin = alignment_pin(0, pin_topa_y-epsilon, pin_top_z)
-    interior = interior + pin.male
-    interior_bottom = interior_bottom - pin.female
-    
-    pin = alignment_pin(0, pin_top_y-pin_top_padding-epsilon, pin_top_z)
-    interior_bottom = interior_bottom + pin.male
-    top =  top - pin.female
 
     pin = alignment_pin(0, pin_middle_y-pin_middle_padding-epsilon, pin_middle_z)
     interior = interior + pin.male
@@ -454,7 +413,7 @@ def skirt_mold():
     interior = interior + pin.male
     top = top - pin.female
 
-    return bottom, top, interior, interior_top_a, interior_top_b, interior_bottom
+    return bottom, top, interior 
 
 
 def normalize_shapes(shapes):
@@ -539,9 +498,9 @@ def interior_mold(interior_shapes, max_skirt_y):
     o = o - air_vent
 
     epsilon = 0.01
-    filler = utils.ring(max_skirt_y-MOLD_Y_TOP+MOLD_PADDING+2*epsilon, -constants.SKIRT_THICKNESS-1)
-    filler = solid.translate([0, 0, -MOLD_PADDING-epsilon])(filler)
-#    filler = solid.debug(filler)
+    filler = utils.ring(max_skirt_y+constants.SHELL_THICKNESS+MOLD_PADDING+2*epsilon, -constants.SKIRT_THICKNESS-1)
+    filler = solid.translate([0, 0, -constants.SHELL_THICKNESS-epsilon])(filler)
+ #   filler = solid.debug(filler)
     o = o + filler
 
     return o
@@ -560,6 +519,12 @@ def exterior_mold(exterior_shapes, max_skirt_x, max_skirt_y):
         
     path = ellipsis_path()
     o = extrude_along_path(output, path, connect_ends=True)
+
+    epsilon = 0.01
+    filler = utils.ring(MOLD_PADDING-constants.SHELL_THICKNESS, 0)
+    filler = solid.translate([0, 0, -MOLD_PADDING-epsilon])(filler)
+    o = o + filler
+
     return o
 
 def back_clip():
@@ -590,8 +555,8 @@ def main():
 #    l = solid.translate([-0.2, 0, 0.05])(l)
     lc = lens.lens_clip(constants.LENS_GROOVE_HEIGHT, 3, math.pi/4)
     bc = back_clip()
-    bottom_mold, top_mold, interior_mold, interior_mold_top_a, interior_mold_top_b, interior_mold_bottom = skirt_mold()
-    mold = bottom_mold + interior_mold + interior_mold_bottom
+    bottom_mold, top_mold, interior_mold = skirt_mold()
+    mold = bottom_mold + interior_mold
 
     output = sk + sh# + lc + l
     if args.slice_a is not None or args.slice_x is not None or args.slice_y is not None or args.slice_z is not None:
@@ -612,9 +577,6 @@ def main():
         bottom_mold = bottom_mold - cut
         top_mold = top_mold - cut
         interior_mold = interior_mold - cut
-        interior_mold_top_a = interior_mold_top_a - cut
-        interior_mold_top_b = interior_mold_top_b - cut
-        interior_mold_bottom = interior_mold_bottom - cut
         mold = mold - cut
         output = output - cut
 
@@ -622,9 +584,6 @@ def main():
     solid.scad_render_to_file(sh, 'shell.scad')
     solid.scad_render_to_file(sk, 'skirt.scad')
     solid.scad_render_to_file(bc, 'back-clip.scad')
-    solid.scad_render_to_file(interior_mold_top_a, 'interior-mold-top-a.scad')
-    solid.scad_render_to_file(interior_mold_top_b, 'interior-mold-top-b.scad')
-    solid.scad_render_to_file(interior_mold_bottom, 'interior-mold-bottom.scad')
     solid.scad_render_to_file(interior_mold, 'interior-mold.scad')
     solid.scad_render_to_file(bottom_mold, 'bottom-mold.scad')
     solid.scad_render_to_file(top_mold, 'top-mold.scad')
@@ -636,9 +595,6 @@ def main():
         utils.export('top-mold', 'stl')
         utils.export('bottom-mold', 'stl')
         utils.export('interior-mold', 'stl')
-        utils.export('interior-mold-top-a', 'stl')
-        utils.export('interior-mold-top-b', 'stl')
-        utils.export('interior-mold-bottom', 'stl')
         utils.export('back-clip', 'stl')
 
 
