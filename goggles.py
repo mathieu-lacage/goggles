@@ -381,8 +381,6 @@ def skirt_mold():
     pin_top_z = MOLD_Y_TOP/2
     pin_middle_z = middle_shape.points[-1].y + MOLD_PADDING
     pin_bottom_z = max_skirt_y + MOLD_PADDING/2
-    pin_top_y = constants.ELLIPSIS_HEIGHT-constants.SKIRT_THICKNESS
-    pin_top_padding = 0.3
     pin_middle_padding = 1
     pin_bottom_padding = pin_middle_padding
     pin_middle_y = constants.ELLIPSIS_HEIGHT+middle_shape.points[-1].x
