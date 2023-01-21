@@ -1,14 +1,10 @@
-#! /usr/bin/env python
-from math import radians
-from solid import OpenSCADObject, Points, Indexes, ScadSize, polyhedron
-from solid.utils import euclidify, euc_to_arr, transform_to_point, centroid
-from euclid3 import Point2, Point3, Vector2, Vector3
+from solid import OpenSCADObject, Points, polyhedron
+from solid.utils import euclidify, euc_to_arr, transform_to_point
+from euclid3 import Point3, Vector3
 
-from typing import Dict, Optional, Sequence, Tuple, Union, List, Callable
+from typing import Tuple, List
 
-Tuple2 = Tuple[float, float]
 FacetIndices = Tuple[int, int, int]
-Point3Transform = Callable[[Point3, Optional[float], Optional[float]], Point3]
 
 # ==========================
 # = Extrusion along a path =
@@ -108,34 +104,3 @@ def _loop_facet_indices(loop_start_index:int, loop_pt_count:int, next_loop_start
         facet_indices.append((a,b,c))
         facet_indices.append((b,d,c))
     return facet_indices
-
-def _rotate_loop(points:Sequence[Point3], rotation_degrees:float=None) -> List[Point3]:
-    if rotation_degrees is None:
-        return points
-    up = Vector3(0,0,1)
-    rads = radians(rotation_degrees)
-    return [p.rotate_around(up, rads) for p in points]
-
-def _scale_loop(points:Sequence[Point3], scale:Union[float, Point2, Tuple2]=None) -> List[Point3]:
-    if scale is None:
-        return points
-
-    if isinstance(scale, (float, int)):
-        scale = [scale] * 2
-    return [Point3(point.x * scale[0], point.y * scale[1], point.z) for point in points]
-
-def _transform_loop(points:Sequence[Point3], transform_func:Point3Transform = None, path_normal:float = None) -> List[Point3]:
-    # transform_func is a function that takes a point and optionally two floats,
-    # a `path_normal`, in [0,1] that indicates where this loop is in a path extrusion,
-    # and `loop_normal` in [0,1] that indicates where this point is in a list of points
-    if transform_func is None:
-        return points
-
-    result = []
-    for i, p in enumerate(points):
-        # i goes from 0 to 1 across points
-        loop_normal = i/(len(points) -1)
-        new_p = transform_func(p, path_normal, loop_normal)
-        result.append(new_p)
-    return result
-
