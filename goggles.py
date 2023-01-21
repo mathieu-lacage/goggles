@@ -336,7 +336,7 @@ def skirt_mold():
         max_skirt_y+2*MOLD_PADDING
     ]))
     # screw holes to open mold
-    screw_y_thickness = 4
+    screw_y_thickness = 2
     screw_x_thickness = MOLD_PADDING/2
     screw_z_thickness = 8
     screwdriver = solid.cube([screw_x_thickness, screw_y_thickness, screw_z_thickness], center=True)
