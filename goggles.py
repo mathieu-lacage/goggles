@@ -46,11 +46,11 @@ def ydistance(alpha):
     return p.y
 def fwidth(alpha):
     d = distance(alpha)
-    width = constants.SHELL_THICKNESS+constants.MAX_WIDTH*d**7
+    width = (2*constants.SKIRT_THICKNESS)+constants.MAX_WIDTH*d**7
     return width
 def fheight(alpha):
     d = distance(alpha)
-    height = constants.SHELL_THICKNESS+constants.MAX_HEIGHT*d**15
+    height = (2*constants.SKIRT_THICKNESS)+constants.MAX_HEIGHT*d**15
     return height
 
 def shell_curve(alpha):
