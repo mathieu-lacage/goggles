@@ -35,19 +35,11 @@ def distance(alpha, threshold=0.5):
     d = 1-(1-d)**2
     return d
 
-def ydistance(alpha):
-    def _norm2(v):
-        return math.sqrt(v.x**2+v.y**2)
-    t = 2*math.pi*alpha
-    e = utils.ellipsis(constants.ELLIPSIS_WIDTH, constants.ELLIPSIS_HEIGHT, t)
-    ep = ellipsis_perpendicular(constants.ELLIPSIS_WIDTH, constants.ELLIPSIS_HEIGHT, t)
-    ep = ep / _norm2(ep)
-    p = e + ep * fwidth(alpha)
-    return p.y
 def fwidth(alpha):
     d = distance(alpha)
     width = (2*constants.SKIRT_THICKNESS)+constants.MAX_WIDTH*d**7
     return width
+
 def fheight(alpha):
     d = distance(alpha)
     height = (2*constants.SKIRT_THICKNESS)+constants.MAX_HEIGHT*d**15
