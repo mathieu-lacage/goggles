@@ -327,9 +327,10 @@ def skirt_mold():
         2*(skirt_extent_y+MOLD_PADDING),
         max_skirt_y+2*MOLD_PADDING
     ]))
+
     # screw holes to open mold
     screw_y_thickness = 2
-    screw_x_thickness = MOLD_PADDING/2
+    screw_x_thickness = MOLD_PADDING/3
     screw_z_thickness = 8
     screwdriver = solid.cube([screw_x_thickness, screw_y_thickness, screw_z_thickness], center=True)
 #    screwdriver = solid.debug(screwdriver)
@@ -341,6 +342,11 @@ def skirt_mold():
     exterior_bounding_box = exterior_bounding_box - solid.translate([screw_left_x, 0, screw_bot_z])(screwdriver)
     exterior_bounding_box = exterior_bounding_box - solid.translate([screw_right_x, 0, screw_top_z])(screwdriver)
     exterior_bounding_box = exterior_bounding_box - solid.translate([screw_right_x, 0, screw_bot_z])(screwdriver)
+
+    screwdriver = solid.cube([screw_z_thickness, screw_y_thickness, screw_x_thickness], center=True)
+    exterior_bounding_box = exterior_bounding_box - solid.translate([0, constants.ELLIPSIS_HEIGHT+middle_shape.points[-1].x, max_skirt_y + MOLD_PADDING])(screwdriver)
+    exterior_bounding_box = exterior_bounding_box - solid.translate([0, -(constants.ELLIPSIS_HEIGHT+middle_shape.points[-1].x), max_skirt_y + MOLD_PADDING])(screwdriver)
+
     # chamfer to release mold from printer bed
     printer_bed_chamfer_w_h = 5
     tmp = solid.cube([printer_bed_chamfer_w_h, printer_bed_chamfer_w_h, 400], center=True)
@@ -366,6 +372,7 @@ def skirt_mold():
     # interior mold
     interior = interior_mold(interior_shapes, max_skirt_y)
     interior = interior - feeding
+    interior = solid.intersection()([interior, exterior_bounding_box])
 
     # pins
     pin_left_x = mold_left_x - MOLD_PADDING/2
