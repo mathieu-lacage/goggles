@@ -482,9 +482,10 @@ def interior_mold(interior_shapes, max_skirt_y):
     air_vent = extrude_along_path(air_vent_shapes, air_vent_path)
 
 
+    epsilon = 0.001
     output = []
     for shape in interior_shapes:
-        shape.append(y=MOLD_Y_TOP)
+        shape.append(y=-constants.SHELL_THICKNESS+epsilon)
         shape.append(x=-2)
         shape.append(y=max_skirt_y+MOLD_PADDING)
         shape.append(x=shape.points[0].x)
