@@ -1,3 +1,4 @@
+import transform
 from solid import OpenSCADObject, Points, polyhedron
 from solid.utils import euclidify, euc_to_arr, transform_to_point
 from euclid3 import Point3, Vector3
@@ -52,19 +53,16 @@ def extrude_along_path( shapes_pts:Points,
         tangent_path_points = [first] + path_pts + [last]
     tangents = [tangent_path_points[i+2] - tangent_path_points[i] for i in range(len(path_pts))]
 
-    for which_loop in range(len(path_pts)):
-        path_pt = path_pts[which_loop]
-        tangent = tangents[which_loop]
+    transformed = transform.to_path(shapes_pts, path_pts, tangents)
+    for i, transformed_shape in enumerate(transformed):
+        loop_start_index = i * shape_pt_count
 
-        this_loop = transform_to_point(shapes_pts[which_loop], dest_point=path_pt, dest_normal=tangent, src_up=src_up)
-        loop_start_index = which_loop * shape_pt_count
-
-        if (which_loop < len(path_pts) - 1):
+        if (i < len(path_pts) - 1):
             loop_facets = _loop_facet_indices(loop_start_index, shape_pt_count)
             facet_indices += loop_facets
 
         # Add the transformed points & facets to our final list
-        polyhedron_pts += this_loop
+        polyhedron_pts += transformed_shape
 
     if connect_ends:
         connect_loop_start_index = len(polyhedron_pts) - shape_pt_count
