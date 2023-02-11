@@ -556,7 +556,7 @@ def main():
     output = sk + sh# + lc + l
     if args.slice_a is not None or args.slice_x is not None or args.slice_y is not None or args.slice_z is not None:
         if args.slice_a is not None:
-            cut = solid.rotate([0, 0, args.slice_a])(solid.translate([-0, 0, 0, -100])(solid.cube([200, 200, 200])))
+            cut = solid.rotate([0, 0, args.slice_a])(solid.translate([-0, 0, -100])(solid.cube([200, 200, 200])))
         else:
             cut = solid.cube([0, 0, 0])
         if args.slice_x is not None:
