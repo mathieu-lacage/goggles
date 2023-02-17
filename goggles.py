@@ -10,7 +10,7 @@ import mg2
 import utils
 import lens
 import constants
-import ggg
+#import ggg
 
 Point3 = euclid3.Point3
 
@@ -113,10 +113,17 @@ def shell():
         path.append(dy=constants.SHELL_THICKNESS)
         p1 = path.points.last + mg2.Point(x=1, y=0) * constants.SHELL_THICKNESS
         path.extend(path=mg2.Path(point=path.points.last)
+                            .append(dy=constants.SHELL_THICKNESS)
+                            .extend(path=mg2.Path(x=0, y=0)
+                                            .append(dx=constants.SHELL_THICKNESS+2)
+                                            .append(dy=-constants.SHELL_THICKNESS)
+                                            .rotate(alpha=distance(alpha)**7)
+                            )
                             .append(point=p1)
                             .append(point=p2)
-                            .splinify())\
-            .extend(path=offset_curve)\
+                            .splinify())
+
+        path.extend(path=offset_curve)\
             .append(x=constants.SHELL_TOP_X, y=constants.SHELL_TOP_Y)\
             .append(x=0)\
             .append(dy=constants.SHELL_THICKNESS-constants.SKIRT_THICKNESS/2)\
@@ -133,15 +140,16 @@ def shell():
             alpha = (0.5-attachment_alpha)/0.5
         curve = shell_curve(shell_alpha).splinify()
         top = max(2*constants.UNIT/3*(1-alpha**4), constants.SHELL_THICKNESS)
-        tooth_width = 2.5*constants.TOOTH_WIDTH*(1-alpha**4)
+        tooth_width = constants.TOOTH_WIDTH*(1-alpha**4)
         epsilon = 0.1
-        p1 = mg2.Path(x=curve.width+constants.SHELL_TOP_X-epsilon, y=curve.height)\
+        
+        p1 = mg2.Path(x=constants.SHELL_TOP_X+curve.width+constants.SHELL_THICKNESS-epsilon, y=curve.height)\
             .append(dx=tooth_width, y=-top/2)\
             .append(y=-top)\
-            .splinify(n=40)\
+            .splinify(n=4)\
             .append(dx=-tooth_width)\
             .append(dx=-curve.width/2, y=-constants.SHELL_THICKNESS)\
-            .append(dx=-curve.width/2)\
+            .append(dx=-curve.width/2-constants.SHELL_THICKNESS-epsilon)\
             .append(dy=constants.SHELL_THICKNESS-epsilon)\
             .append(dx=curve.width-epsilon)
         return utils.eu3(p1.reversed_points)
@@ -154,12 +162,11 @@ def shell():
     path2 = [utils.ellipsis(constants.ELLIPSIS_WIDTH, constants.ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(-constants.TOP_ATTACHMENT_WIDTH*2*math.pi, constants.TOP_ATTACHMENT_WIDTH*2*math.pi, TOP_ATTACHMENT_RESOLUTION, include_end=True)]
     shapes2 = [top_attachment_profile(i, len(path2)) for i in range(len(path2))]
     #top_attachment = ggg.extrude(top_attachment_profile).along_open_path(path2).solidify()
-    top_attachment = extrude_along_path(shapes2, path2, connect_ends=False)
+    top_attachment = extrude_along_path(shapes2, path2, connect_ends=False, cap_ends=True)
     top_attachment = top_attachment -\
-        solid.translate([constants.ELLIPSIS_WIDTH+constants.SHELL_TOP_X+constants.SHELL_THICKNESS+constants.TOOTH_WIDTH, 0, -10])(
+        solid.translate([constants.ELLIPSIS_WIDTH+constants.SHELL_TOP_X+constants.SHELL_THICKNESS+constants.SHELL_MIN_WIDTH+constants.TOOTH_WIDTH/2, 0, -10])(
             rounded_square(1.5*constants.SHELL_THICKNESS, 1.5*constants.SHELL_THICKNESS, 20, constants.SHELL_THICKNESS/2)
         )
-
     o = o + top_attachment
 
     BOTTOM_ATTACHMENT_HEIGHT = 5
