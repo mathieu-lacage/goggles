@@ -41,19 +41,7 @@ def extrude_along_path( shapes_pts:Points,
     for shape_pts in shapes_pts:
         assert shape_pt_count == len(shape_pts)
 
-    src_up = Vector3(0, 0, 1)
-
-
-    tangent_path_points: List[Point3] = []
-    if connect_ends:
-        tangent_path_points = [path_pts[-1]] + path_pts + [path_pts[0]]
-    else:
-        first = Point3(*(path_pts[0] - (path_pts[1] - path_pts[0])))
-        last = Point3(*(path_pts[-1] - (path_pts[-2] - path_pts[-1])))
-        tangent_path_points = [first] + path_pts + [last]
-    tangents = [tangent_path_points[i+2] - tangent_path_points[i] for i in range(len(path_pts))]
-
-    transformed = transform.to_path(shapes_pts, path_pts, tangents)
+    transformed = transform.to_path(shapes_pts, path_pts, connect_ends)
     for i, transformed_shape in enumerate(transformed):
         loop_start_index = i * shape_pt_count
 

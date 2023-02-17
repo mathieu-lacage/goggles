@@ -10,6 +10,7 @@ import mg2
 import utils
 import lens
 import constants
+import ggg
 
 Point3 = euclid3.Point3
 
@@ -42,13 +43,13 @@ def distance(alpha, threshold=0.5):
 
 def fwidth(alpha):
     d = distance(alpha)
-    width = (2*constants.SKIRT_THICKNESS)+constants.MAX_WIDTH*d**7
+    width = constants.SHELL_MIN_WIDTH+constants.MAX_WIDTH*d**7
     return width
 
 
 def fheight(alpha):
     d = distance(alpha)
-    height = (2*constants.SKIRT_THICKNESS)+constants.MAX_HEIGHT*d**15
+    height = constants.SHELL_MIN_HEIGHT+constants.MAX_HEIGHT*d**15
     return height
 
 
@@ -123,7 +124,7 @@ def shell():
         return utils.eu3(path.reversed_points)
 
     def top_attachment_profile(i, n):
-        attachment_alpha = i/n
+        attachment_alpha = i/(n-1)
         if attachment_alpha > 0.5:
             shell_alpha = 2*constants.TOP_ATTACHMENT_WIDTH*(attachment_alpha-0.5)
             alpha = (attachment_alpha - 0.5)/0.5
@@ -134,7 +135,7 @@ def shell():
         top = max(2*constants.UNIT/3*(1-alpha**4), constants.SHELL_THICKNESS)
         tooth_width = 2.5*constants.TOOTH_WIDTH*(1-alpha**4)
         epsilon = 0.1
-        p1 = mg2.Path(x=curve.width+constants.SHELL_TOP_X, y=curve.height)\
+        p1 = mg2.Path(x=curve.width+constants.SHELL_TOP_X-epsilon, y=curve.height)\
             .append(dx=tooth_width, y=-top/2)\
             .append(y=-top)\
             .splinify(n=40)\
@@ -150,9 +151,10 @@ def shell():
     o = extrude_along_path(shapes1, path1, connect_ends=True)
 #    o = solid.debug(o)
 
-    path2 = [utils.ellipsis(constants.ELLIPSIS_WIDTH, constants.ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(-constants.TOP_ATTACHMENT_WIDTH*2*math.pi, constants.TOP_ATTACHMENT_WIDTH*2*math.pi, TOP_ATTACHMENT_RESOLUTION)]
+    path2 = [utils.ellipsis(constants.ELLIPSIS_WIDTH, constants.ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(-constants.TOP_ATTACHMENT_WIDTH*2*math.pi, constants.TOP_ATTACHMENT_WIDTH*2*math.pi, TOP_ATTACHMENT_RESOLUTION, include_end=True)]
     shapes2 = [top_attachment_profile(i, len(path2)) for i in range(len(path2))]
-    top_attachment = extrude_along_path(shapes2, path2)
+    #top_attachment = ggg.extrude(top_attachment_profile).along_open_path(path2).solidify()
+    top_attachment = extrude_along_path(shapes2, path2, connect_ends=False)
     top_attachment = top_attachment -\
         solid.translate([constants.ELLIPSIS_WIDTH+constants.SHELL_TOP_X+constants.SHELL_THICKNESS+constants.TOOTH_WIDTH, 0, -10])(
             rounded_square(1.5*constants.SHELL_THICKNESS, 1.5*constants.SHELL_THICKNESS, 20, constants.SHELL_THICKNESS/2)
