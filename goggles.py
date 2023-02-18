@@ -279,34 +279,36 @@ GASKET_U_DEPTH = 2
 GASKET_U_WIDTH_BOTTOM = constants.SHELL_THICKNESS * 1.1
 GASKET_U_WIDTH_TOP = constants.SHELL_THICKNESS * 0.7
 GASKET_THICKNESS = 2
+GASKET_U_DEPTH_EXTRA = 1
 
 
 def gasket_profile():
     #
     #    ------------
     #   /           |
-    #  /    Z-------A
+    #  /    ---------
     # |     |
-    #  \    ---------
-    #   \           |
-    #    ------------
+    #  \    Z-------A--/
+    #   \             /
+    #    ------------/
     offset = (GASKET_U_WIDTH_BOTTOM-GASKET_U_WIDTH_TOP)/2
     path = mg2.Path(x=0, y=0)\
-        .append(dy=GASKET_THICKNESS)\
+        .append(dx=-GASKET_U_DEPTH_EXTRA)\
         .extend(path=mg2.Path(x=0, y=0)
-            .append(dx=+(GASKET_U_DEPTH+GASKET_THICKNESS), dy=offset)
+            .append(dy=GASKET_THICKNESS)
+            .append(dx=+(GASKET_U_DEPTH+GASKET_U_DEPTH_EXTRA+GASKET_THICKNESS), dy=offset)
             .append(dy=-(GASKET_THICKNESS+GASKET_THICKNESS+GASKET_U_WIDTH_BOTTOM))
             .append(dx=-(GASKET_U_DEPTH+GASKET_THICKNESS), dy=offset)
+            .append(dy=GASKET_THICKNESS)
             .splinify()
         )\
-        .append(dy=GASKET_THICKNESS)\
         .append(dx=GASKET_U_DEPTH, dy=-offset)\
         .append(dy=GASKET_U_WIDTH_BOTTOM)
     return path
 
 def gasket():
     path = [Point3(0, 0, 0), Point3(0, 0, 10)]
-    shapes = [utils.eu3(gasket_profile().points) for i in range(len(path))]
+    shapes = [utils.eu3(gasket_profile().reversed_points) for i in range(len(path))]
     o = extrude_along_path(shapes, path, connect_ends=False)
     return o
 
@@ -325,7 +327,7 @@ def wrapped_gasket():
     path = ellipsis_path()
     shapes = [utils.eu3(wrapped_gasket_profile(i, constants.NSTEPS)) for i in range(len(path))]
     o = extrude_along_path(shapes, path, connect_ends=True)
-    o = solid.color('blue', 0.8)(o)
+    o = solid.color('blue')(o)
     return o
 
 
