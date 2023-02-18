@@ -169,7 +169,7 @@ def shell():
         )
     o = o + top_attachment
 
-    BOTTOM_ATTACHMENT_HEIGHT = 5
+    BOTTOM_ATTACHMENT_HEIGHT = 2
 
     def bottom_attachment_profile(i, n):
         attachment_alpha = i / n
@@ -201,9 +201,9 @@ def shell():
 
     bah = rounded_square(constants.SHELL_BOTTOM_HOLE_HEIGHT, constants.SHELL_BOTTOM_HOLE_WIDTH, 20, constants.SHELL_THICKNESS/2)
     c = shell_curve(0.5)
-    bah1 = solid.translate([-constants.ELLIPSIS_WIDTH-c.width-constants.SHELL_TOP_X-constants.SHELL_THICKNESS/2, 0, constants.ELLIPSIS_HEIGHT-3])(bah)
+    bah1 = solid.translate([-constants.ELLIPSIS_WIDTH-c.width-constants.SHELL_TOP_X-constants.SHELL_THICKNESS/2, 0, constants.ELLIPSIS_HEIGHT])(bah)
     bottom_attachment = bottom_attachment - bah1
-    bah2 = solid.translate([-constants.ELLIPSIS_WIDTH-c.width-constants.SHELL_TOP_X-constants.SHELL_THICKNESS - 10, 0, c.height-BOTTOM_ATTACHMENT_HEIGHT])(
+    bah2 = solid.translate([-constants.ELLIPSIS_WIDTH-c.width-constants.SHELL_TOP_X-constants.SHELL_THICKNESS - 10, 0, c.height-BOTTOM_ATTACHMENT_HEIGHT-constants.SHELL_BOTTOM_HOLE_WIDTH/2])(
         solid.rotate([0, 90, 0])(bah)
     )
     bottom_attachment = bottom_attachment - bah2
