@@ -275,6 +275,59 @@ def skirt():
 #    o = solid.debug(o)
     return o
 
+GASKET_U_DEPTH = 2
+GASKET_U_WIDTH_BOTTOM = constants.SHELL_THICKNESS * 1.1
+GASKET_U_WIDTH_TOP = constants.SHELL_THICKNESS * 0.7
+GASKET_THICKNESS = 2
+
+
+def gasket_profile():
+    #
+    #    ------------
+    #   /           |
+    #  /    Z-------A
+    # |     |
+    #  \    ---------
+    #   \           |
+    #    ------------
+    offset = (GASKET_U_WIDTH_BOTTOM-GASKET_U_WIDTH_TOP)/2
+    path = mg2.Path(x=0, y=0)\
+        .append(dy=GASKET_THICKNESS)\
+        .extend(path=mg2.Path(x=0, y=0)
+            .append(dx=+(GASKET_U_DEPTH+GASKET_THICKNESS), dy=offset)
+            .append(dy=-(GASKET_THICKNESS+GASKET_THICKNESS+GASKET_U_WIDTH_BOTTOM))
+            .append(dx=-(GASKET_U_DEPTH+GASKET_THICKNESS), dy=offset)
+            .splinify()
+        )\
+        .append(dy=GASKET_THICKNESS)\
+        .append(dx=GASKET_U_DEPTH, dy=-offset)\
+        .append(dy=GASKET_U_WIDTH_BOTTOM)
+    return path
+
+def gasket():
+    path = [Point3(0, 0, 0), Point3(0, 0, 10)]
+    shapes = [utils.eu3(gasket_profile().points) for i in range(len(path))]
+    o = extrude_along_path(shapes, path, connect_ends=False)
+    return o
+
+
+def wrapped_gasket_profile(i, n):
+    alpha = i / n
+    curve = shell_curve(alpha)
+    start_anchor_x = curve.width + constants.SHELL_TOP_X + constants.SHELL_THICKNESS
+    start_anchor_y = curve.height + constants.SHELL_THICKNESS + constants.SHELL_THICKNESS
+    path = mg2.Path(x=start_anchor_x, y=start_anchor_y)
+    path.extend(gasket_profile().rotate(alpha=distance(alpha)**7))
+    return path.reversed_points
+
+
+def wrapped_gasket():
+    path = ellipsis_path()
+    shapes = [utils.eu3(wrapped_gasket_profile(i, constants.NSTEPS)) for i in range(len(path))]
+    o = extrude_along_path(shapes, path, connect_ends=True)
+    o = solid.color('blue', 0.8)(o)
+    return o
+
 
 def alignment_pin(x, y, z):
     Pin = collections.namedtuple('Pin', ['male', 'female'])
@@ -555,6 +608,8 @@ def main():
     constants.NSTEPS = args.resolution
     sh = shell()
     sk = skirt()
+    g = gasket()
+    wg = wrapped_gasket()
     l = lens.lens()
 #    l = solid.translate([-0.2, 0, 0.05])(l)
     lc = lens.lens_clip(constants.LENS_GROOVE_HEIGHT, 3, math.pi/4)
@@ -562,7 +617,7 @@ def main():
     bottom_mold, top_mold, interior_mold = skirt_mold()
     mold = bottom_mold + interior_mold
 
-    output = sk + sh# + lc + l
+    output = sh + wg # + lc + l + sk
     if args.slice_a is not None or args.slice_x is not None or args.slice_y is not None or args.slice_z is not None:
         if args.slice_a is not None:
             cut = solid.rotate([0, 0, args.slice_a])(solid.translate([-0, 0, -100])(solid.cube([200, 200, 200])))
@@ -578,6 +633,8 @@ def main():
         sh = sh - cut
         sk = sk - cut
         l = l - cut
+        g = g - cut
+        wg = wg - cut
         bottom_mold = bottom_mold - cut
         top_mold = top_mold - cut
         interior_mold = interior_mold - cut
@@ -588,6 +645,8 @@ def main():
     solid.scad_render_to_file(sh, 'shell.scad')
     solid.scad_render_to_file(sk, 'skirt.scad')
     solid.scad_render_to_file(bc, 'back-clip.scad')
+    solid.scad_render_to_file(g, 'gasket.scad')
+    solid.scad_render_to_file(wg, 'wrapped-gasket.scad')
     solid.scad_render_to_file(interior_mold, 'interior-mold.scad')
     solid.scad_render_to_file(bottom_mold, 'bottom-mold.scad')
     solid.scad_render_to_file(top_mold, 'top-mold.scad')
