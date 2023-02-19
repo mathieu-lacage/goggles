@@ -236,20 +236,16 @@ def skirt_profile(i, n):
         .append(dy=silicon_skirt_height)\
         .append(dx=silicon_skirt_width)\
         .splinify()
-#            .append(dx=constants.SHELL_TOP_X+zero.width)\
     path.extend(path=tmp)
     return_path = path.copy().reverse().offset(constants.SKIRT_THICKNESS, left=False)
-#   append_angle(alpha=math.pi/2, delta=constants.SKIRT_THICKNESS)\
     path.extend_arc(alpha=math.pi, r=constants.SKIRT_THICKNESS/2)\
         .extend(path=return_path)\
-        .append(x=constants.SHELL_TOP_X)\
         .append(x=0+constants.SKIRT_THICKNESS/2)\
         .extend_arc(alpha=math.pi/2, r=constants.SKIRT_THICKNESS+constants.SKIRT_THICKNESS/2)\
         .append(dy=-constants.SHELL_THICKNESS+constants.SKIRT_THICKNESS/2)\
         .append(dx=constants.SKIRT_THICKNESS)\
         .append(dy=constants.SHELL_THICKNESS-constants.SKIRT_THICKNESS/2)\
         .extend_arc(alpha=-math.pi/2, r=constants.SKIRT_THICKNESS/2)
-#            .append(dx=-constants.SKIRT_THICKNESS)
 
     return path.points
 
@@ -280,7 +276,8 @@ def gasket_profile():
     #  \    Z-------A--/
     #   \             /
     #    ------------/
-    offset = (GASKET_U_WIDTH_BOTTOM-GASKET_U_WIDTH_TOP)/2
+    #offset = (GASKET_U_WIDTH_BOTTOM-GASKET_U_WIDTH_TOP)/2
+    offset = 0
     path = mg2.Path(x=0, y=0)\
         .append(dx=-GASKET_U_DEPTH_EXTRA)\
         .extend(path=mg2.Path(x=0, y=0)
@@ -295,11 +292,69 @@ def gasket_profile():
         .append(dy=GASKET_U_WIDTH_BOTTOM)
     return path
 
+
 def gasket():
     path = [Point3(0, 0, 0), Point3(0, 0, 10)]
     shapes = [utils.eu3(gasket_profile().reversed_points) for i in range(len(path))]
     o = extrude_along_path(shapes, path, connect_ends=False)
     return o
+
+
+def gasket_mold():
+    GASKET_MOLD_LENGTH = 200
+    GASKET_MOLD_PADDING = 2
+
+    profile = gasket_profile().points
+
+    max_y_i = argmax(profile, key=lambda i: i.y)
+    min_y_i = argmin(profile, key=lambda i: i.y)
+    max_x = max([p.x for p in profile])
+    min_x = min([p.x for p in profile])
+    max_y = max([p.y for p in profile])
+    min_y = min([p.y for p in profile])
+
+    bottom = profile[max_y_i:min_y_i+1]
+    top = profile[min_y_i:] + profile[:max_y_i+1]
+
+    path = [Point3(0, 0, 0), Point3(0, 0, GASKET_MOLD_LENGTH)]
+
+    bottom = mg2.Path(path=bottom)\
+        .append(y=min_y-GASKET_MOLD_PADDING)\
+        .append(x=max_x+GASKET_MOLD_PADDING)\
+        .append(y=max_y+GASKET_MOLD_PADDING)\
+        .append(x=bottom[0].x)
+    shapes = [utils.eu3(bottom.copy().points) for p in path]
+    bottom = extrude_along_path(shapes, path, connect_ends=False)
+
+    bottom_min_x = min(profile[max_y_i].x, profile[min_y_i].x)
+
+    bottom_outer = solid.cube([
+        max_x+2*GASKET_MOLD_PADDING-bottom_min_x,
+        max_y - min_y + 2*GASKET_MOLD_PADDING + 2*GASKET_MOLD_PADDING,
+        GASKET_MOLD_LENGTH+2*GASKET_MOLD_PADDING
+    ])
+    epsilon = 0.01
+    bottom_inner = solid.cube([
+        100,
+        max_y - min_y + 2*GASKET_MOLD_PADDING - epsilon,
+        GASKET_MOLD_LENGTH
+    ])
+    bottom_outer = bottom_outer - solid.translate([-50, GASKET_MOLD_PADDING, GASKET_MOLD_PADDING])(bottom_inner)
+    bottom_outer = solid.translate([-max_x-GASKET_MOLD_PADDING, min_y-2*GASKET_MOLD_PADDING, -GASKET_MOLD_PADDING])(bottom_outer)
+    hole = solid.cylinder(h=GASKET_MOLD_LENGTH+2*GASKET_MOLD_PADDING+50, r=0.3, segments=10)
+    hole = solid.translate([-(GASKET_U_DEPTH+GASKET_THICKNESS/2), -0.3, -25])(hole)
+    bottom_outer = bottom_outer - hole
+    bottom = bottom + bottom_outer
+
+    top = mg2.Path(path=top)\
+        .append(y=max_y+GASKET_MOLD_PADDING)\
+        .append(x=min_x-GASKET_MOLD_PADDING)\
+        .append(y=min_y-GASKET_MOLD_PADDING)\
+        .append(x=top[0].x)
+    shapes = [utils.eu3(top.copy().points) for p in path]
+    top = extrude_along_path(shapes, path, connect_ends=False)
+
+    return bottom, top 
 
 
 def wrapped_gasket_profile(i, n):
@@ -408,6 +463,8 @@ def main():
     sk = skirt()
     g = gasket()
     wg = wrapped_gasket()
+    gm_bottom, gm_top = gasket_mold()
+    gm = gm_bottom + gm_top
     l = lens.lens()
 #    l = solid.translate([-0.2, 0, 0.05])(l)
     lc = lens.lens_clip(constants.LENS_GROOVE_HEIGHT, 3, math.pi/4)
@@ -432,6 +489,9 @@ def main():
         l = l - cut
         g = g - cut
         wg = wg - cut
+        gm_top = gm_top - cut
+        gm_bottom = gm_bottom - cut
+        gm = gm - cut
         mold = mold - cut
         output = output - cut
 
@@ -441,12 +501,17 @@ def main():
     solid.scad_render_to_file(bc, 'back-clip.scad')
     solid.scad_render_to_file(g, 'gasket.scad')
     solid.scad_render_to_file(wg, 'wrapped-gasket.scad')
+    solid.scad_render_to_file(gm_top, 'gasket-top-mold.scad')
+    solid.scad_render_to_file(gm_bottom, 'gasket-bottom-mold.scad')
+    solid.scad_render_to_file(gm, 'gasket-mold.scad')
     solid.scad_render_to_file(mold, 'mold.scad')
 
     if args.export:
         utils.export('shell', 'stl')
         utils.export('skirt', 'stl')
         utils.export('mold', 'stl')
+        utils.export('gasket-top-mold', 'stl')
+        utils.export('gasket-bottom-mold', 'stl')
         utils.export('back-clip', 'stl')
 
 
