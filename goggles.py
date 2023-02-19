@@ -30,8 +30,8 @@ def ellipsis_perpendicular(a, b, t):
     return euclid3.Point3(p.x/a**2, p.y/b**2)
 
 
-def ellipsis_path():
-    path = [utils.ellipsis(constants.ELLIPSIS_WIDTH, constants.ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(0, 2*math.pi, constants.NSTEPS, include_end=False)]
+def ellipsis_path(delta=0):
+    path = [utils.ellipsis(constants.ELLIPSIS_WIDTH+delta, constants.ELLIPSIS_HEIGHT+delta, t) for t in solid.utils.frange(0, 2*math.pi, constants.NSTEPS, include_end=False)]
     return path
 
 
@@ -121,7 +121,7 @@ def shell():
                             )
                             .append(point=p1)
                             .append(point=p2)
-                            .splinify())
+        )
 
         path.extend(path=offset_curve)\
             .append(x=constants.SHELL_TOP_X, y=constants.SHELL_TOP_Y)\
@@ -230,23 +230,12 @@ def skirt_profile(i, n):
     zero = shell_curve(0)
     path = mg2.Path(path=curve.splinify())\
         .translate(constants.SHELL_TOP_X, 0)
-    if False:
-        silicon_skirt_height = 0.75*constants.UNIT
-        silicon_skirt_width = constants.SHELL_TOP_X+zero.width+curve.width/3
-        tmp = mg2.Path(x=0, y=0)\
-            .append(dy=silicon_skirt_height)\
-            .append(dx=-silicon_skirt_width)\
-            .append(dy=-silicon_skirt_height/2)\
-            .splinify()
-    else:
-        silicon_skirt_height = 0.5*constants.UNIT
-        silicon_skirt_width = constants.SHELL_TOP_X+zero.width+curve.width/3
-        tmp = mg2.Path(x=0, y=0)\
-            .append(dy=silicon_skirt_height)\
-            .append(dx=-silicon_skirt_width)\
-            .append(dy=silicon_skirt_width)\
-            .append(dx=(constants.SHELL_TOP_X+zero.width)*(1-distance(alpha)))\
-            .splinify()
+    silicon_skirt_height = 0.5*constants.UNIT
+    silicon_skirt_width = constants.SHELL_TOP_X+zero.width
+    tmp = mg2.Path(x=0, y=0)\
+        .append(dy=silicon_skirt_height)\
+        .append(dx=silicon_skirt_width)\
+        .splinify()
 #            .append(dx=constants.SHELL_TOP_X+zero.width)\
     path.extend(path=tmp)
     return_path = path.copy().reverse().offset(constants.SKIRT_THICKNESS, left=False)
@@ -331,42 +320,10 @@ def wrapped_gasket():
     return o
 
 
-def alignment_pin(x, y, z):
-    Pin = collections.namedtuple('Pin', ['male', 'female'])
-    pin_height = 3
-    pin_radius = 1.5
-
-    def pin(height, radius):
-        filet_radius = 0.5
-        profile = mg2.Path(x=radius, y=0)\
-            .append(dy=height-filet_radius)\
-            .extend_arc(alpha=math.pi/2, r=filet_radius)
-        path = [euclid3.Point3(x=math.cos(t), y=math.sin(t), z=0) for t in solid.utils.frange(0, 2*math.pi, constants.NSTEPS, include_end=False)]
-        shapes = [utils.eu3(profile.points) for i in range(len(path))]
-        o = extrude_along_path(shapes, path, connect_ends=True)
-        o = solid.hull()(o)
-        o = solid.rotate([-90, 0, 0])(o)
-        return o
-    male = pin(pin_height, pin_radius)
-    female = pin(pin_height+0.1, pin_radius+0.1)
-    male = solid.translate([x, y, z])(male)
-    female = solid.translate([x, y, z])(female)
-    return Pin(male=male, female=female)
-
-
-MOLD_PADDING = 10
-MOLD_Y_TOP = -MOLD_PADDING
-SPRUE_TOP_RADIUS = 1.5
-SPRUE_BOT_RADIUS = 2
-SPRUE_SLUG_LENGTH = 2
-SPRUE_HEIGHT = MOLD_PADDING+2
-RING_RUNNER_RADIUS = 1
-RING_GATE_LAND_LENGTH = 0.5
-RING_GATE_LAND_THICKNESS = 0.5
+MOLD_PADDING = 1
 
 
 def skirt_mold():
-    epsilon = 0.001
     path = ellipsis_path()
     shapes = [skirt_profile(i, constants.NSTEPS) for i in range(len(path))]
     exterior_shapes = []
@@ -381,103 +338,10 @@ def skirt_mold():
 
     interior_shapes = normalize_shapes(interior_shapes)
     exterior_shapes = normalize_shapes(exterior_shapes)
-    middle_shape = exterior_shapes[int(len(exterior_shapes)/4)]
-    max_skirt_x = max([p.max_x for p in exterior_shapes])
     max_skirt_y = max([p.max_y for p in exterior_shapes])
-    mold_left_x = -(constants.ELLIPSIS_WIDTH + max_skirt_x)
-    mold_right_x = constants.ELLIPSIS_WIDTH + max([p.x for p in exterior_shapes[0].points])
-
-    # exterior mold bounding box
-    skirt_extent_y = max([p.x for p in middle_shape.points]) + MOLD_PADDING  # This is a rough approximation
-    exterior_bounding_box = solid.translate([mold_left_x-MOLD_PADDING, -skirt_extent_y-MOLD_PADDING, -MOLD_PADDING])(solid.cube([
-        mold_right_x-mold_left_x+2*MOLD_PADDING,
-        2*(skirt_extent_y+MOLD_PADDING),
-        max_skirt_y+2*MOLD_PADDING
-    ]))
-
-    # screw holes to open mold
-    screw_y_thickness = 2
-    screw_x_thickness = MOLD_PADDING/3
-    screw_z_thickness = 8
-    screwdriver = solid.cube([screw_x_thickness, screw_y_thickness, screw_z_thickness], center=True)
-#    screwdriver = solid.debug(screwdriver)
-    screw_left_x = mold_left_x-MOLD_PADDING
-    screw_right_x = mold_right_x+MOLD_PADDING
-    screw_top_z = (max_skirt_y+2*MOLD_PADDING)/4 - MOLD_PADDING
-    screw_bot_z = 3*(max_skirt_y+2*MOLD_PADDING)/4 - MOLD_PADDING
-    exterior_bounding_box = exterior_bounding_box - solid.translate([screw_left_x, 0, screw_top_z])(screwdriver)
-    exterior_bounding_box = exterior_bounding_box - solid.translate([screw_left_x, 0, screw_bot_z])(screwdriver)
-    exterior_bounding_box = exterior_bounding_box - solid.translate([screw_right_x, 0, screw_top_z])(screwdriver)
-    exterior_bounding_box = exterior_bounding_box - solid.translate([screw_right_x, 0, screw_bot_z])(screwdriver)
-
-    screwdriver = solid.cube([screw_z_thickness, screw_y_thickness, screw_x_thickness], center=True)
-    exterior_bounding_box = exterior_bounding_box - solid.translate([0, constants.ELLIPSIS_HEIGHT+middle_shape.points[-1].x, max_skirt_y + MOLD_PADDING])(screwdriver)
-    exterior_bounding_box = exterior_bounding_box - solid.translate([0, -(constants.ELLIPSIS_HEIGHT+middle_shape.points[-1].x), max_skirt_y + MOLD_PADDING])(screwdriver)
-
-    # chamfer to release mold from printer bed
-    printer_bed_chamfer_w_h = 5
-    tmp = solid.cube([printer_bed_chamfer_w_h, printer_bed_chamfer_w_h, 400], center=True)
-    tmp = solid.rotate([0, 0, 45])(tmp)
-    for x in [screw_left_x, screw_right_x]:
-        exterior_bounding_box = exterior_bounding_box - solid.translate([x, skirt_extent_y+MOLD_PADDING, 0])(tmp)
-        exterior_bounding_box = exterior_bounding_box - solid.translate([x, -skirt_extent_y-MOLD_PADDING, 0])(tmp)
-    tmp = solid.cube([200, printer_bed_chamfer_w_h, printer_bed_chamfer_w_h], center=True)
-    tmp = solid.rotate([45, 0, 0])(tmp)
-    for z in [-MOLD_PADDING, max_skirt_y+MOLD_PADDING]:
-        exterior_bounding_box = exterior_bounding_box - solid.translate([0, skirt_extent_y+MOLD_PADDING, z])(tmp)
-        exterior_bounding_box = exterior_bounding_box - solid.translate([0, -skirt_extent_y-MOLD_PADDING, z])(tmp)
-
-    feeding = feeder(exterior_shapes[0].points[0], exterior_shapes[int(constants.NSTEPS/2)].points[0])
-
-    # exterior mold
-    a = exterior_mold(exterior_shapes, max_skirt_x, max_skirt_y)
-    a = a - feeding
-    a = solid.intersection()([a, exterior_bounding_box])
-    bottom = a - solid.translate([-100, 0, -100])(solid.cube([200, 200, 200]))
-    top = a - solid.translate([-100, -200, -100])(solid.cube([200, 200, 200]))
-
     # interior mold
     interior = interior_mold(interior_shapes, max_skirt_y)
-    interior = interior - feeding
-    interior = solid.intersection()([interior, exterior_bounding_box])
-
-    # pins
-    pin_left_x = mold_left_x - MOLD_PADDING/2
-    pin_right_x = mold_right_x + MOLD_PADDING/2
-    pin_top_z = MOLD_Y_TOP/2
-    pin_middle_z = middle_shape.points[-1].y + MOLD_PADDING
-    pin_bottom_z = max_skirt_y + MOLD_PADDING/2
-    pin_middle_padding = 1
-    pin_bottom_padding = pin_middle_padding
-    pin_middle_y = constants.ELLIPSIS_HEIGHT+middle_shape.points[-1].x
-    pin_bottom_y = pin_middle_y
-
-    for z in [pin_top_z, pin_middle_z, pin_bottom_z]:
-        pin = alignment_pin(pin_left_x, 0-epsilon, z)
-        bottom = bottom + pin.male
-        top = top - pin.female
-    for z in [pin_top_z, pin_middle_z, pin_bottom_z]:
-        pin = alignment_pin(pin_right_x, 0-epsilon, z)
-        bottom = bottom + pin.male
-        top = top - pin.female
-
-    pin = alignment_pin(0, -pin_middle_y-pin_middle_padding-epsilon, pin_middle_z)
-    bottom = bottom + pin.male
-    interior = interior - pin.female
-
-    pin = alignment_pin(0, -pin_bottom_y-pin_bottom_padding-epsilon, pin_bottom_z)
-    bottom = bottom + pin.male
-    interior = interior - pin.female
-
-    pin = alignment_pin(0, pin_middle_y-pin_middle_padding-epsilon, pin_middle_z)
-    interior = interior + pin.male
-    top = top - pin.female
-
-    pin = alignment_pin(0, pin_bottom_y-pin_bottom_padding-epsilon, pin_bottom_z)
-    interior = interior + pin.male
-    top = top - pin.female
-
-    return bottom, top, interior 
+    return interior 
 
 
 def normalize_shapes(shapes):
@@ -489,61 +353,8 @@ def normalize_shapes(shapes):
     return shapes
 
 
-def feeder(a, b):
-    FEEDER_RUNNER_LENGTH = 2*(constants.ELLIPSIS_WIDTH-constants.SKIRT_THICKNESS-RING_GATE_LAND_LENGTH-RING_RUNNER_RADIUS)
-    FEEDER_RUNNER_RADIUS = RING_RUNNER_RADIUS
-    NOZZLE_TOP_RADIUS = 8
-    NOZZLE_BOT_RADIUS = 2
-    NOZZLE_HEIGHT = 6
-
-    nozzle = solid.cylinder(h=NOZZLE_HEIGHT, r1=NOZZLE_TOP_RADIUS, r2=NOZZLE_BOT_RADIUS, segments=20)
-    nozzle = solid.translate([0, 0, -SPRUE_HEIGHT-constants.SHELL_THICKNESS+SPRUE_SLUG_LENGTH-0.66*NOZZLE_HEIGHT])(nozzle)
-    sprue = solid.cylinder(h=SPRUE_HEIGHT, r1=SPRUE_TOP_RADIUS, r2=SPRUE_BOT_RADIUS, segments=20)
-    sprue = solid.translate([0, 0, -SPRUE_HEIGHT-constants.SHELL_THICKNESS+SPRUE_SLUG_LENGTH])(sprue)
-    feeder_runner = solid.cylinder(h=FEEDER_RUNNER_LENGTH, r=FEEDER_RUNNER_RADIUS, segments=20)
-    feeder_runner = solid.rotate([0, 90, 0])(feeder_runner)
-    feeder_runner = solid.translate([-FEEDER_RUNNER_LENGTH/2, 0, -constants.SHELL_THICKNESS+RING_GATE_LAND_THICKNESS/2])(feeder_runner)
-
-    def ring_gate_profile(i, n):
-        epsilon = 0.001
-        gate_land_length = RING_GATE_LAND_LENGTH + RING_RUNNER_RADIUS
-        p = mg2.Path(x=-constants.SKIRT_THICKNESS+epsilon, y=-constants.SHELL_THICKNESS)\
-            .append(dx=-gate_land_length-epsilon)\
-            .append(dy=RING_GATE_LAND_THICKNESS)\
-            .append(dx=gate_land_length+epsilon*2)
-        return utils.eu3(p.reversed_points)
-    path = ellipsis_path()
-    ring_gate_shapes = [ring_gate_profile(i, len(path)) for i in range(len(path))]
-    ring_gate = extrude_along_path(ring_gate_shapes, path, connect_ends=True)
-
-    def ring_runner_profile(i, n):
-        epsilon = 0.001
-        p = mg2.Path(x=-constants.SKIRT_THICKNESS-RING_GATE_LAND_LENGTH+epsilon, y=-constants.SHELL_THICKNESS+RING_GATE_LAND_THICKNESS/2)\
-            .extend_arc(alpha=2*math.pi, r=RING_RUNNER_RADIUS, reference=mg2.Point(x=0, y=1), n=20)
-        return utils.eu3(p.points)
-    path = ellipsis_path()
-    ring_runner_shapes = [ring_runner_profile(i, len(path)) for i in range(len(path))]
-    ring_runner = extrude_along_path(ring_runner_shapes, path, connect_ends=True)
-    
-    return nozzle + sprue + ring_gate + ring_runner + feeder_runner
-
-
 def interior_mold(interior_shapes, max_skirt_y):
-    air_vent_thickness = constants.SKIRT_THICKNESS/2
     path = ellipsis_path()
-
-    bottom = [shape.points[0] for shape in interior_shapes]
-    outer_most = argmax(bottom, key=lambda i: i.x)
-    delta = int(5*constants.NSTEPS/100)
-    air_vent_path = path[outer_most-delta+1:outer_most+delta]
-    air_vent_shapes = []
-    for b in bottom[outer_most-delta+1:outer_most+delta]:
-        p = mg2.Path(x=b.x+0.2, y=b.y-0.1)
-        p.append(y=max_skirt_y+MOLD_PADDING+1)
-        p.append(dx=-air_vent_thickness-0.2)
-        p.append(y=b.y-0.1)
-        air_vent_shapes.append(utils.eu3(p.points))
-    air_vent = extrude_along_path(air_vent_shapes, air_vent_path)
 
     epsilon = 0.001
     output = []
@@ -555,33 +366,18 @@ def interior_mold(interior_shapes, max_skirt_y):
         output.append(utils.eu3(shape.reversed_points))
 
     o = extrude_along_path(output, path, connect_ends=True)
-    o = o - air_vent
 
     epsilon = 0.01
     filler = utils.ring(max_skirt_y+constants.SHELL_THICKNESS+MOLD_PADDING+2*epsilon, -constants.SKIRT_THICKNESS-1)
     filler = solid.translate([0, 0, -constants.SHELL_THICKNESS-epsilon])(filler)
     o = o + filler
 
-    return o
-
-
-def exterior_mold(exterior_shapes, max_skirt_x, max_skirt_y):
-    output = []
-    for shape in exterior_shapes:
-        shape = shape.copy()
-        shape.append(y=max_skirt_y+50)
-        shape.append(x=max_skirt_x+50)
-        shape.append(y=MOLD_Y_TOP)
-        shape.append(x=shape.points[0].x)
-        output.append(utils.eu3(shape.reversed_points))
-
-    path = ellipsis_path()
-    o = extrude_along_path(output, path, connect_ends=True)
-
-    epsilon = 0.01
-    filler = utils.ring(MOLD_PADDING-constants.SHELL_THICKNESS, 0)
-    filler = solid.translate([0, 0, -MOLD_PADDING-epsilon])(filler)
-    o = o + filler
+    # air gaps
+    gap_path = ellipsis_path(delta=1)
+    for i in range(0, len(gap_path), int(len(gap_path)/10)):
+        gap = solid.cylinder(0.3, 100, segments=30)
+        gap = solid.translate([-gap_path[i].x, -gap_path[i].y, 0])(gap)
+        o = o - gap
 
     return o
 
@@ -616,10 +412,9 @@ def main():
 #    l = solid.translate([-0.2, 0, 0.05])(l)
     lc = lens.lens_clip(constants.LENS_GROOVE_HEIGHT, 3, math.pi/4)
     bc = back_clip()
-    bottom_mold, top_mold, interior_mold = skirt_mold()
-    mold = bottom_mold + interior_mold
+    mold = skirt_mold()
 
-    output = sh + wg # + lc + l + sk
+    output = sh + wg + sk # + lc + l
     if args.slice_a is not None or args.slice_x is not None or args.slice_y is not None or args.slice_z is not None:
         if args.slice_a is not None:
             cut = solid.rotate([0, 0, args.slice_a])(solid.translate([-0, 0, -100])(solid.cube([200, 200, 200])))
@@ -637,9 +432,6 @@ def main():
         l = l - cut
         g = g - cut
         wg = wg - cut
-        bottom_mold = bottom_mold - cut
-        top_mold = top_mold - cut
-        interior_mold = interior_mold - cut
         mold = mold - cut
         output = output - cut
 
@@ -649,17 +441,12 @@ def main():
     solid.scad_render_to_file(bc, 'back-clip.scad')
     solid.scad_render_to_file(g, 'gasket.scad')
     solid.scad_render_to_file(wg, 'wrapped-gasket.scad')
-    solid.scad_render_to_file(interior_mold, 'interior-mold.scad')
-    solid.scad_render_to_file(bottom_mold, 'bottom-mold.scad')
-    solid.scad_render_to_file(top_mold, 'top-mold.scad')
     solid.scad_render_to_file(mold, 'mold.scad')
 
     if args.export:
         utils.export('shell', 'stl')
         utils.export('skirt', 'stl')
-        utils.export('top-mold', 'stl')
-        utils.export('bottom-mold', 'stl')
-        utils.export('interior-mold', 'stl')
+        utils.export('mold', 'stl')
         utils.export('back-clip', 'stl')
 
 
