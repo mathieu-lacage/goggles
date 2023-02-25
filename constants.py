@@ -30,7 +30,7 @@ BACK_CLIP_RADIUS = BACK_CLIP_THICKNESS/2
 # Thickness of the skirt. The code does not generate
 # a model which a constant skirt thickness but the thickness
 # should be, on average, pretty close to this.
-SKIRT_THICKNESS = 0.9
+SKIRT_THICKNESS = 1
 # Thickness of the skirt material when it is
 # compressed by the lens. Increase if the material you use
 # allows it (it is still possible to assemble the body, skirt, 
