@@ -10,6 +10,7 @@ import mg2
 import utils
 import lens
 import constants
+import transform
 #import ggg
 
 Point3 = euclid3.Point3
@@ -238,6 +239,14 @@ def skirt_profile(i, n):
     return path.points
 
 
+def skirt_xy_extents():
+    path = ellipsis_path()
+    shapes = [utils.eu3(skirt_profile(i, constants.NSTEPS)) for i in range(len(path))]
+    transformed = transform.to_path(shapes, path, True)
+    farthest = [max(shape, key=lambda i: i.magnitude()) for shape in transformed]
+    return farthest
+
+
 def skirt():
     path = ellipsis_path()
     shapes = [utils.eu3(skirt_profile(i, constants.NSTEPS)) for i in range(len(path))]
@@ -247,9 +256,6 @@ def skirt():
     o = solid.color("grey")(o)
 #    o = solid.debug(o)
     return o
-
-
-MOLD_PADDING = 1
 
 
 def skirt_mold():
@@ -283,6 +289,7 @@ def normalize_shapes(shapes):
 
 
 def interior_mold(interior_shapes, max_skirt_y):
+    MOLD_PADDING = 3
     path = ellipsis_path()
 
     epsilon = 0.001
@@ -301,12 +308,37 @@ def interior_mold(interior_shapes, max_skirt_y):
     filler = solid.translate([0, 0, -constants.SHELL_THICKNESS-epsilon])(filler)
     o = o + filler
 
+    BASE_PADDING = 30 
+    xy_extents = skirt_xy_extents()
+    xmin = min(p.x for p in xy_extents)
+    ymin = min(p.y for p in xy_extents)
+    zmin = min(p.z for p in xy_extents)
+    xmax = max(p.x for p in xy_extents)
+    ymax = max(p.y for p in xy_extents)
+    zmax = max(p.z for p in xy_extents)
+    base = solid.cube([BASE_PADDING + xmax-xmin, BASE_PADDING + ymax-ymin, MOLD_PADDING/2])
+    base = solid.translate([xmin, -(ymax-ymin)/2, zmax+MOLD_PADDING])(base)
+    base2 = solid.cube([xmax-xmin, ymax-ymin, MOLD_PADDING/2+epsilon*2])
+    base3 = solid.cube([BASE_PADDING + xmax-xmin-MOLD_PADDING, BASE_PADDING + ymax-ymin-MOLD_PADDING, MOLD_PADDING+epsilon])
+    base3 = base3 - base2
+    base3 = solid.translate([xmin+MOLD_PADDING/2, -(ymax-ymin)/2+MOLD_PADDING/2, zmax+MOLD_PADDING-epsilon])(base3)
+    base = base - base3
+    o = o + base
+
     # air gaps
+    gap_radius = 0.8
     gap_path = ellipsis_path(delta=1)
-    for i in range(0, len(gap_path), int(len(gap_path)/10)):
-        gap = solid.cylinder(0.3, 100, segments=30)
+    for i in range(0, len(gap_path), int(len(gap_path)/5)):
+        gap = solid.cylinder(gap_radius, 100, segments=30)
         gap = solid.translate([-gap_path[i].x, -gap_path[i].y, 0])(gap)
         o = o - gap
+    for y in [1, -1]:
+        gap = solid.cylinder(gap_radius, 100, segments=30)
+        o = o - solid.translate([-constants.ELLIPSIS_WIDTH-constants.SHELL_MAX_WIDTH/2, y*1.2*constants.UNIT, -50])(gap)
+    gap = solid.cylinder(constants.ELLIPSIS_WIDTH, constants.SHELL_MAX_HEIGHT)
+    gap = solid.scale([1.6, 1, 1])(gap)
+    o = o - solid.translate([-constants.ELLIPSIS_WIDTH/3, 0, constants.SHELL_MAX_HEIGHT*3/4])(gap)
+
 
     return o
 
