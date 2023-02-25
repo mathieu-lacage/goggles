@@ -244,7 +244,8 @@ def skirt_xy_extents():
     shapes = [utils.eu3(skirt_profile(i, constants.NSTEPS)) for i in range(len(path))]
     transformed = transform.to_path(shapes, path, True)
     farthest = [max(shape, key=lambda i: i.magnitude()) for shape in transformed]
-    return farthest
+    closest = [min(shape, key=lambda i: i.magnitude()) for shape in transformed]
+    return farthest, closest
 
 
 def skirt():
@@ -287,9 +288,9 @@ def normalize_shapes(shapes):
     shapes = [mg2.Path(path=shape) for shape in shapes]
     return shapes
 
-
+MOLD_PADDING = 3
+BASE_HEIGHT = MOLD_PADDING/2
 def interior_mold(interior_shapes, max_skirt_y):
-    MOLD_PADDING = 3
     path = ellipsis_path()
 
     epsilon = 0.001
@@ -303,45 +304,47 @@ def interior_mold(interior_shapes, max_skirt_y):
 
     o = extrude_along_path(output, path, connect_ends=True)
 
-    epsilon = 0.01
-    filler = utils.ring(max_skirt_y+constants.SHELL_THICKNESS+MOLD_PADDING+2*epsilon, -constants.SKIRT_THICKNESS-1)
+    filler = utils.ring(max_skirt_y+constants.SHELL_THICKNESS+MOLD_PADDING+2*epsilon, -constants.SKIRT_THICKNESS-0.5)
     filler = solid.translate([0, 0, -constants.SHELL_THICKNESS-epsilon])(filler)
     o = o + filler
 
-    BASE_PADDING = 30 
-    xy_extents = skirt_xy_extents()
-    xmin = min(p.x for p in xy_extents)
-    ymin = min(p.y for p in xy_extents)
-    zmin = min(p.z for p in xy_extents)
-    xmax = max(p.x for p in xy_extents)
-    ymax = max(p.y for p in xy_extents)
-    zmax = max(p.z for p in xy_extents)
-    base = solid.cube([BASE_PADDING + xmax-xmin, BASE_PADDING + ymax-ymin, MOLD_PADDING/2])
-    base = solid.translate([xmin, -(ymax-ymin)/2, zmax+MOLD_PADDING])(base)
-    base2 = solid.cube([xmax-xmin, ymax-ymin, MOLD_PADDING/2+epsilon*2])
-    base3 = solid.cube([BASE_PADDING + xmax-xmin-MOLD_PADDING, BASE_PADDING + ymax-ymin-MOLD_PADDING, MOLD_PADDING+epsilon])
-    base3 = base3 - base2
-    base3 = solid.translate([xmin+MOLD_PADDING/2, -(ymax-ymin)/2+MOLD_PADDING/2, zmax+MOLD_PADDING-epsilon])(base3)
-    base = base - base3
+    farthest, closest = skirt_xy_extents()
+    xmin = min(p.x for p in farthest)
+    ymin = min(p.y for p in farthest)
+    zmin = min(p.z for p in farthest)
+    xmax = max(p.x for p in farthest)
+    ymax = max(p.y for p in farthest)
+    zmax = max(p.z for p in farthest)
+    base = solid.cube([xmax-xmin, ymax-ymin, BASE_HEIGHT])
+    base = solid.translate([xmin, -(ymax-ymin)/2, zmax+BASE_HEIGHT])(base)
     o = o + base
 
     # air gaps
     gap_radius = 0.8
     gap_path = ellipsis_path(delta=1)
+    gap = solid.cylinder(gap_radius, 100, segments=30)
     for i in range(0, len(gap_path), int(len(gap_path)/5)):
-        gap = solid.cylinder(gap_radius, 100, segments=30)
-        gap = solid.translate([-gap_path[i].x, -gap_path[i].y, 0])(gap)
-        o = o - gap
+        tmp = solid.translate([-gap_path[i].x, -gap_path[i].y, 0])(gap)
+        o = o - tmp 
+    gap_path = ellipsis_path(delta=-constants.ELLIPSIS_HEIGHT/2)
+    for i in range(0, len(gap_path), int(len(gap_path)/10)):
+        tmp = solid.translate([-gap_path[i].x, -gap_path[i].y, -10])(gap)
+        o = o - tmp 
+    o = o - solid.translate([0, 0, -10])(gap)
     for y in [1, -1]:
-        gap = solid.cylinder(gap_radius, 100, segments=30)
         o = o - solid.translate([-constants.ELLIPSIS_WIDTH-constants.SHELL_MAX_WIDTH/2, y*1.2*constants.UNIT, -50])(gap)
     gap = solid.cylinder(constants.ELLIPSIS_WIDTH, constants.SHELL_MAX_HEIGHT)
     gap = solid.scale([1.6, 1, 1])(gap)
     o = o - solid.translate([-constants.ELLIPSIS_WIDTH/3, 0, constants.SHELL_MAX_HEIGHT*3/4])(gap)
-
-
     return o
 
+ALIGNMENT_PADDING = 30
+def alignment_base():
+    farthest, closest = skirt_xy_extents()
+    ymin = min(p.y for p in farthest)
+    ymax = max(p.y for p in farthest)
+    o = solid.cube([ALIGNMENT_PADDING, ymax-ymin, BASE_HEIGHT])
+    return o
 
 def back_clip():
     o = rounded_square2(constants.BACK_CLIP_X, constants.BACK_CLIP_Y, constants.BACK_CLIP_THICKNESS, constants.BACK_CLIP_RADIUS, adjust=True)
@@ -351,6 +354,50 @@ def back_clip():
         b = solid.translate([0, i, 0])(a)
         o = o - b
     return o
+
+
+def generate_skirt_cuts():
+    import cairo
+    kerf = 0.1
+    #laser = 0.01
+    laser = 2
+
+    def draw_path(context, path):
+        context.move_to(path[0].x, path[0].y)
+        for p in path:
+            context.line_to(p.x, p.y)
+        context.close_path()
+        context.set_source_rgba(1, 0, 0, 1)
+        context.set_line_width(laser)
+        context.stroke()
+
+    farthest, closest = skirt_xy_extents()
+    xmin = min(p.x for p in farthest)
+    xmax = max(p.x for p in farthest)
+    ymin = min(p.y for p in farthest)
+    ymax = max(p.y for p in farthest)
+    width = ALIGNMENT_PADDING+xmax-xmin
+    height = ALIGNMENT_PADDING+ymax-ymin
+
+    with cairo.SVGSurface("skirt-cuts.svg", 2*(width), 2*(height)) as surface:
+        surface.set_document_unit(cairo.SVGUnit.MM)
+        context = cairo.Context(surface)
+
+        context.save()
+        context.translate(ALIGNMENT_PADDING/2, ALIGNMENT_PADDING/2)
+        context.rectangle(0, 0, width, height)
+        context.set_source_rgba(0, 0, 0, 1)
+        context.set_line_width(laser)
+        context.set_line_width(laser)
+        context.stroke()
+
+        context.save()
+        context.translate(ALIGNMENT_PADDING-xmin, ALIGNMENT_PADDING-ymin)
+        draw_path(context, farthest)
+        draw_path(context, closest)
+        context.restore()
+
+        context.restore()
 
 
 def main():
@@ -372,6 +419,9 @@ def main():
     lc = lens.lens_clip(constants.LENS_GROOVE_HEIGHT, 3, math.pi/4)
     bc = back_clip()
     mold = skirt_mold()
+    ab = alignment_base()
+
+    generate_skirt_cuts()
 
     output = sh + sk # + lc + l
     if args.slice_a is not None or args.slice_x is not None or args.slice_y is not None or args.slice_z is not None:
@@ -389,6 +439,7 @@ def main():
         sh = sh - cut
         sk = sk - cut
         l = l - cut
+        ab = ab - cut
         mold = mold - cut
         output = output - cut
 
@@ -397,12 +448,14 @@ def main():
     solid.scad_render_to_file(sk, 'skirt.scad')
     solid.scad_render_to_file(bc, 'back-clip.scad')
     solid.scad_render_to_file(mold, 'mold.scad')
+    solid.scad_render_to_file(ab, 'alignment-base.scad')
 
     if args.export:
         utils.export('shell', 'stl')
         utils.export('skirt', 'stl')
         utils.export('mold', 'stl')
         utils.export('back-clip', 'stl')
+        utils.export('alignment-base', 'stl')
 
 
 main()
