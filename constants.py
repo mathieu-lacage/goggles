@@ -73,9 +73,5 @@ YALPHA = XALPHA*0.03
 # Control the size of the shell and skirt. Smaller values
 # will decrease the internal volume of the skirt which will 
 # decrease the maximum depth you can dive to. 
-MAX_HEIGHT = UNIT*3
-MAX_WIDTH = UNIT*2.5
-
-
-
-
+SHELL_MAX_HEIGHT = UNIT*3
+SHELL_MAX_WIDTH = UNIT*2

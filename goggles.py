@@ -43,13 +43,13 @@ def distance(alpha, threshold=0.5):
 
 def fwidth(alpha):
     d = distance(alpha)
-    width = constants.SHELL_MIN_WIDTH+constants.MAX_WIDTH*d**7
+    width = constants.SHELL_MIN_WIDTH+constants.SHELL_MAX_WIDTH*d**7
     return width
 
 
 def fheight(alpha):
     d = distance(alpha)
-    height = constants.SHELL_MIN_HEIGHT+constants.MAX_HEIGHT*d**15
+    height = constants.SHELL_MIN_HEIGHT+constants.SHELL_MAX_HEIGHT*d**15
     return height
 
 
@@ -103,27 +103,13 @@ def shell():
         alpha = i/n
         curve = shell_curve(alpha).splinify()
 
-        offset_curve = mg2.Path(path=curve)\
-            .offset(constants.SHELL_THICKNESS, left=False)\
-            .reverse()
-
         path = mg2.Path(path=curve)\
-            .translate(dx=constants.SHELL_TOP_X)
-        p2 = path.points.last + path.normal(left=False) * constants.SHELL_THICKNESS
-        path.append(dy=constants.SHELL_THICKNESS)
-        p1 = path.points.last + mg2.Point(x=1, y=0) * constants.SHELL_THICKNESS
-        path.extend(path=mg2.Path(point=path.points.last)
-                            .append(dy=constants.SHELL_THICKNESS)
-                            .extend(path=mg2.Path(x=0, y=0)
-                                            .append(dx=constants.SHELL_THICKNESS+2)
-                                            .append(dy=-constants.SHELL_THICKNESS)
-                                            .rotate(alpha=distance(alpha)**7)
-                            )
-                            .append(point=p1)
-                            .append(point=p2)
-        )
-
-        path.extend(path=offset_curve)\
+            .translate(dx=constants.SHELL_TOP_X)\
+            .extend(path=shell_extension(0.75))
+        return_path = path.copy().reverse()\
+            .offset(constants.SHELL_THICKNESS, left=True)
+        path.extend_arc(alpha=-math.pi, r=constants.SHELL_THICKNESS/2)\
+            .extend(path=return_path)\
             .append(x=constants.SHELL_TOP_X, y=constants.SHELL_TOP_Y)\
             .append(x=0)\
             .append(dy=constants.SHELL_THICKNESS-constants.SKIRT_THICKNESS/2)\
@@ -183,7 +169,7 @@ def shell():
         xalpha = constants.XALPHA
         yalpha = constants.YALPHA
         epsilon = 0.4
-        cuts = curve.cut(y=constants.MAX_HEIGHT-handle_height)
+        cuts = curve.cut(y=constants.SHELL_MAX_HEIGHT-handle_height)
         delta_x = cuts[1].width
         delta_y = cuts[1].height
         path = mg2.Path(x=cuts[1].points.first.x+constants.LENS_BOTTOM_RING_WIDTH+constants.SHELL_THICKNESS-epsilon, y=cuts[1].points.first.y)\
@@ -201,7 +187,7 @@ def shell():
 
     bah = rounded_square(constants.SHELL_BOTTOM_HOLE_HEIGHT, constants.SHELL_BOTTOM_HOLE_WIDTH, 20, constants.SHELL_THICKNESS/2)
     c = shell_curve(0.5)
-    bah1 = solid.translate([-constants.ELLIPSIS_WIDTH-c.width-constants.SHELL_TOP_X-constants.SHELL_THICKNESS/2, 0, constants.ELLIPSIS_HEIGHT])(bah)
+    bah1 = solid.translate([-constants.ELLIPSIS_WIDTH-c.width-constants.SHELL_TOP_X-constants.SHELL_THICKNESS/2, 0, constants.SHELL_MAX_HEIGHT])(bah)
     bottom_attachment = bottom_attachment - bah1
     bah2 = solid.translate([-constants.ELLIPSIS_WIDTH-c.width-constants.SHELL_TOP_X-constants.SHELL_THICKNESS - 10, 0, c.height-BOTTOM_ATTACHMENT_HEIGHT-constants.SHELL_BOTTOM_HOLE_WIDTH/2])(
         solid.rotate([0, 90, 0])(bah)
@@ -211,7 +197,7 @@ def shell():
 
     # water filling holes
     for y in [1, -1]:
-        o = o - solid.translate([-constants.ELLIPSIS_WIDTH-constants.MAX_WIDTH/2, y*1.2*constants.UNIT, -50])(
+        o = o - solid.translate([-constants.ELLIPSIS_WIDTH-constants.SHELL_MAX_WIDTH/2, y*1.2*constants.UNIT, -50])(
             solid.scale([2, 1, 1])(
                 solid.cylinder(1.5*constants.UNIT/7, 100, segments=30)
             )
@@ -223,20 +209,22 @@ def shell():
 
     return o
 
+def shell_extension(delta=1):
+    zero = shell_curve(0)
+    silicon_skirt_height = 0.5*constants.UNIT
+    silicon_skirt_width = constants.SHELL_TOP_X+zero.width
+    tmp = mg2.Path(x=0, y=0)\
+        .append(dy=silicon_skirt_height*delta)\
+        .append(dx=silicon_skirt_width*delta)\
+        .splinify()
+    return tmp
 
 def skirt_profile(i, n):
     alpha = i / n
     curve = shell_curve(alpha)
-    zero = shell_curve(0)
     path = mg2.Path(path=curve.splinify())\
         .translate(constants.SHELL_TOP_X, 0)
-    silicon_skirt_height = 0.5*constants.UNIT
-    silicon_skirt_width = constants.SHELL_TOP_X+zero.width
-    tmp = mg2.Path(x=0, y=0)\
-        .append(dy=silicon_skirt_height)\
-        .append(dx=silicon_skirt_width)\
-        .splinify()
-    path.extend(path=tmp)
+    path.extend(path=shell_extension())
     return_path = path.copy().reverse().offset(constants.SKIRT_THICKNESS, left=False)
     path.extend_arc(alpha=math.pi, r=constants.SKIRT_THICKNESS/2)\
         .extend(path=return_path)\
@@ -369,7 +357,6 @@ def main():
         sh = sh - cut
         sk = sk - cut
         l = l - cut
-        g = g - cut
         mold = mold - cut
         output = output - cut
 
