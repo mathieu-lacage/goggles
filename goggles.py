@@ -277,7 +277,7 @@ def skirt_mold():
     max_skirt_y = max([p.max_y for p in exterior_shapes])
     # interior mold
     interior = interior_mold(interior_shapes, max_skirt_y)
-    return interior 
+    return interior,
 
 
 def normalize_shapes(shapes):
@@ -288,8 +288,7 @@ def normalize_shapes(shapes):
     shapes = [mg2.Path(path=shape) for shape in shapes]
     return shapes
 
-MOLD_PADDING = 3
-BASE_HEIGHT = MOLD_PADDING/2
+MOLD_PADDING = 10
 def interior_mold(interior_shapes, max_skirt_y):
     path = ellipsis_path()
 
@@ -308,34 +307,6 @@ def interior_mold(interior_shapes, max_skirt_y):
     filler = solid.translate([0, 0, -constants.SHELL_THICKNESS-epsilon])(filler)
     o = o + filler
 
-    farthest, closest = skirt_xy_extents()
-    xmin = min(p.x for p in farthest)
-    ymin = min(p.y for p in farthest)
-    zmin = min(p.z for p in farthest)
-    xmax = max(p.x for p in farthest)
-    ymax = max(p.y for p in farthest)
-    zmax = max(p.z for p in farthest)
-    base = solid.cube([xmax-xmin, ymax-ymin, BASE_HEIGHT])
-    base = solid.translate([xmin, -(ymax-ymin)/2, zmax+BASE_HEIGHT])(base)
-    o = o + base
-
-    # air gaps
-    gap_radius = 0.8
-    gap_path = ellipsis_path(delta=1)
-    gap = solid.cylinder(gap_radius, 100, segments=30)
-    for i in range(0, len(gap_path), int(len(gap_path)/5)):
-        tmp = solid.translate([-gap_path[i].x, -gap_path[i].y, 0])(gap)
-        o = o - tmp 
-    gap_path = ellipsis_path(delta=-constants.ELLIPSIS_HEIGHT/2)
-    for i in range(0, len(gap_path), int(len(gap_path)/10)):
-        tmp = solid.translate([-gap_path[i].x, -gap_path[i].y, -10])(gap)
-        o = o - tmp 
-    o = o - solid.translate([0, 0, -10])(gap)
-    for y in [1, -1]:
-        o = o - solid.translate([-constants.ELLIPSIS_WIDTH-constants.SHELL_MAX_WIDTH/2, y*1.2*constants.UNIT, -50])(gap)
-    gap = solid.cylinder(constants.ELLIPSIS_WIDTH, constants.SHELL_MAX_HEIGHT)
-    gap = solid.scale([1.6, 1, 1])(gap)
-    o = o - solid.translate([-constants.ELLIPSIS_WIDTH/3, 0, constants.SHELL_MAX_HEIGHT*3/4])(gap)
     return o
 
 def back_clip():
@@ -366,7 +337,8 @@ def main():
 #    l = solid.translate([-0.2, 0, 0.05])(l)
     lc = lens.lens_clip(constants.LENS_GROOVE_HEIGHT, 3, math.pi/4)
     bc = back_clip()
-    mold = skirt_mold()
+    interior_mold, = skirt_mold()
+    mold = interior_mold
 
     output = sh + sk # + lc + l
     if args.slice_a is not None or args.slice_x is not None or args.slice_y is not None or args.slice_z is not None:
@@ -391,11 +363,13 @@ def main():
     solid.scad_render_to_file(sh, 'shell.scad')
     solid.scad_render_to_file(sk, 'skirt.scad')
     solid.scad_render_to_file(bc, 'back-clip.scad')
+    solid.scad_render_to_file(mold, 'interior-mold.scad')
     solid.scad_render_to_file(mold, 'mold.scad')
 
     if args.export:
         utils.export('shell', 'stl')
         utils.export('skirt', 'stl')
+        utils.export('interior-mold', 'stl')
         utils.export('mold', 'stl')
         utils.export('back-clip', 'stl')
 
