@@ -359,54 +359,6 @@ def back_clip():
         o = o - b
     return o
 
-def offset(path, left, thickness):
-    import shapely
-    line = shapely.LineString([(p.x, p.y) for p in path])
-    _offset = line.offset_curve(thickness if left else -thickness)
-    return [mg2.Point(x=i[0], y=i[1]) for i in _offset.coords]
-
-def generate_skirt_cuts():
-    import cairo
-    kerf = 0.1
-    #laser = 0.01
-    laser = 0.1
-
-    def draw_path(context, path):
-        context.move_to(path[0].x, path[0].y)
-        for p in path:
-            context.line_to(p.x, p.y)
-        context.close_path()
-        context.set_source_rgba(1, 0, 0, 1)
-        context.set_line_width(laser)
-        context.stroke()
-
-    farthest, closest = skirt_xy_extents()
-    xmin = min(p.x for p in farthest)
-    xmax = max(p.x for p in farthest)
-    ymin = min(p.y for p in farthest)
-    ymax = max(p.y for p in farthest)
-    width = ALIGNMENT_PADDING+xmax-xmin
-    height = ALIGNMENT_PADDING+ymax-ymin
-
-    with cairo.SVGSurface("skirt-cuts.svg", 2*(width), 2*(height)) as surface:
-        surface.set_document_unit(cairo.SVGUnit.MM)
-        context = cairo.Context(surface)
-
-        context.save()
-        context.translate(ALIGNMENT_PADDING/2, ALIGNMENT_PADDING/2)
-        context.rectangle(0, 0, width, height)
-        context.set_source_rgba(0, 0, 0, 1)
-        context.set_line_width(laser)
-        context.stroke()
-
-        context.save()
-        context.translate(ALIGNMENT_PADDING-xmin, ALIGNMENT_PADDING-ymin)
-        draw_path(context, offset(farthest, left=True, thickness=laser))
-        draw_path(context, offset(closest, left=True, thickness=laser))
-        context.restore()
-
-        context.restore()
-
 
 def main():
     import argparse
@@ -428,8 +380,6 @@ def main():
     bc = back_clip()
     mold = skirt_mold()
     ab = alignment_base()
-
-    generate_skirt_cuts()
 
     output = sh + sk # + lc + l
     if args.slice_a is not None or args.slice_x is not None or args.slice_y is not None or args.slice_z is not None:
