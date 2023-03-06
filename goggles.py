@@ -239,13 +239,20 @@ def skirt_profile(i, n):
     return path.points
 
 
-def skirt_xy_extents():
+def skirt_bounding_box():
+    BoundingBox = collections.namedtuple('BoundingBox', ['xmin', 'xmax', 'ymin', 'ymax', 'zmin', 'zmax'])
     path = ellipsis_path()
     shapes = [utils.eu3(skirt_profile(i, constants.NSTEPS)) for i in range(len(path))]
     transformed = transform.to_path(shapes, path, True)
-    farthest = [max(shape, key=lambda i: i.magnitude()) for shape in transformed]
-    closest = [min(shape, key=lambda i: i.magnitude()) for shape in transformed]
-    return farthest, closest
+
+    xmin = min([p.x for shape in transformed for p in shape])
+    xmax = max([p.x for shape in transformed for p in shape])
+    ymin = min([p.y for shape in transformed for p in shape])
+    ymax = max([p.y for shape in transformed for p in shape])
+    zmin = min([p.z for shape in transformed for p in shape])
+    zmax = max([p.z for shape in transformed for p in shape])
+
+    return BoundingBox(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, zmin=zmin, zmax=zmax)
 
 
 def skirt():
@@ -256,6 +263,31 @@ def skirt():
     o = solid.translate([0, 0, 0])(o)
     o = solid.color("grey")(o)
 #    o = solid.debug(o)
+    return o
+
+
+def skirt_mold_bounding_box():
+    corner = solid.cylinder(r=constants.MOLD_RADIUS, h=constants.MOLD_BB_Y, segments=40)
+    corner = solid.rotate([90, 0, 0])(corner)
+    corner = solid.translate([constants.MOLD_RADIUS, constants.MOLD_BB_Y, constants.MOLD_RADIUS])(corner)
+    
+    c1 = corner
+    c2 = solid.translate([constants.MOLD_BB_X-constants.MOLD_RADIUS*2, 0, 0])(c1)
+    c3 = solid.translate([0, 0, constants.MOLD_BB_Z-constants.MOLD_RADIUS*2])(c1)
+    c4 = solid.translate([constants.MOLD_BB_X-constants.MOLD_RADIUS*2, 0, constants.MOLD_BB_Z-constants.MOLD_RADIUS*2])(c1)
+    o = solid.hull()([c1, c2, c3, c4])
+
+    bb = skirt_bounding_box()
+    assert (bb.xmax-bb.xmin) <= constants.MOLD_BB_X
+    assert (bb.ymax-bb.ymin) <= constants.MOLD_BB_Y
+    assert (bb.zmax-bb.zmin) <= constants.MOLD_BB_Z
+
+    o = solid.translate([
+        bb.xmin-(constants.MOLD_BB_X-(bb.xmax-bb.xmin))/2,
+        bb.ymin-(constants.MOLD_BB_Y-(bb.ymax-bb.ymin))/2,
+        bb.zmin-(constants.MOLD_BB_Z-(bb.zmax-bb.zmin))/2
+    ])(o)
+
     return o
 
 
@@ -277,7 +309,12 @@ def skirt_mold():
     max_skirt_y = max([p.max_y for p in exterior_shapes])
     # interior mold
     interior = interior_mold(interior_shapes, max_skirt_y)
-    return interior,
+
+    a = exterior_mold(exterior_shapes)
+    bottom = a - solid.translate([-100, 0, -100])(solid.cube([200, 200, 200]))
+    top = a - solid.translate([-100, -200, -100])(solid.cube([200, 200, 200]))
+
+    return interior, bottom, top
 
 
 def normalize_shapes(shapes):
@@ -309,6 +346,31 @@ def interior_mold(interior_shapes, max_skirt_y):
 
     return o
 
+
+def exterior_mold(exterior_shapes):
+    output = []
+    for shape in exterior_shapes:
+        shape = shape.copy()
+        shape.append(dy=50)
+        shape.append(dx=50)
+        shape.append(dy=-100)
+        shape.append(x=shape.points[0].x)
+        output.append(utils.eu3(shape.reversed_points))
+
+    path = ellipsis_path()
+    o = extrude_along_path(output, path, connect_ends=True)
+
+    epsilon = 0.01
+    filler = utils.ring(100-constants.SHELL_THICKNESS, 0)
+    filler = solid.translate([0, 0, -100-epsilon])(filler)
+    o = o + filler
+
+    bb = skirt_mold_bounding_box()
+    o = solid.intersection()([o, bb])
+
+    return o
+
+
 def back_clip():
     o = rounded_square2(constants.BACK_CLIP_X, constants.BACK_CLIP_Y, constants.BACK_CLIP_THICKNESS, constants.BACK_CLIP_RADIUS, adjust=True)
     a = rounded_square(constants.BACK_CLIP_X-constants.BACK_CLIP_THICKNESS*2-constants.BACK_CLIP_RADIUS, constants.BACK_CLIP_THICKNESS, 100, constants.BACK_CLIP_RADIUS, adjust=True)
@@ -337,7 +399,7 @@ def main():
 #    l = solid.translate([-0.2, 0, 0.05])(l)
     lc = lens.lens_clip(constants.LENS_GROOVE_HEIGHT, 3, math.pi/4)
     bc = back_clip()
-    interior_mold, = skirt_mold()
+    interior_mold, bottom_mold, top_mold = skirt_mold()
     mold = interior_mold
 
     output = sh + sk # + lc + l
@@ -356,6 +418,9 @@ def main():
         sh = sh - cut
         sk = sk - cut
         l = l - cut
+        top_mold = top_mold - cut
+        bottom_mold = bottom_mold - cut
+        interior_mold = interior_mold - cut
         mold = mold - cut
         output = output - cut
 
@@ -363,7 +428,9 @@ def main():
     solid.scad_render_to_file(sh, 'shell.scad')
     solid.scad_render_to_file(sk, 'skirt.scad')
     solid.scad_render_to_file(bc, 'back-clip.scad')
-    solid.scad_render_to_file(mold, 'interior-mold.scad')
+    solid.scad_render_to_file(interior_mold, 'interior-mold.scad')
+    solid.scad_render_to_file(top_mold, 'top-mold.scad')
+    solid.scad_render_to_file(bottom_mold, 'bot-mold.scad')
     solid.scad_render_to_file(mold, 'mold.scad')
 
     if args.export:

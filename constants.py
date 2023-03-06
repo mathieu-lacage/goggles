@@ -75,3 +75,9 @@ YALPHA = XALPHA*0.03
 # decrease the maximum depth you can dive to. 
 SHELL_MAX_HEIGHT = UNIT*3
 SHELL_MAX_WIDTH = UNIT*2
+
+# Mold bounding box dimensions
+MOLD_BB_X = 80
+MOLD_BB_Y = 50
+MOLD_BB_Z = 60
+MOLD_RADIUS = 3
