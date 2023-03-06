@@ -340,10 +340,14 @@ def interior_mold(interior_shapes, max_skirt_y):
 
 ALIGNMENT_PADDING = 30
 def alignment_base():
+    epsilon = 0.1
     farthest, closest = skirt_xy_extents()
     ymin = min(p.y for p in farthest)
     ymax = max(p.y for p in farthest)
     o = solid.cube([ALIGNMENT_PADDING, ymax-ymin, BASE_HEIGHT])
+    hole = solid.cube([ALIGNMENT_PADDING-2, ymax-ymin-2, BASE_HEIGHT+epsilon*2])
+    hole = solid.translate([1, 1, -epsilon])(hole)
+    o = o - hole
     return o
 
 def back_clip():
@@ -355,12 +359,17 @@ def back_clip():
         o = o - b
     return o
 
+def offset(path, left, thickness):
+    import shapely
+    line = shapely.LineString([(p.x, p.y) for p in path])
+    _offset = line.offset_curve(thickness if left else -thickness)
+    return [mg2.Point(x=i[0], y=i[1]) for i in _offset.coords]
 
 def generate_skirt_cuts():
     import cairo
     kerf = 0.1
     #laser = 0.01
-    laser = 2
+    laser = 0.1
 
     def draw_path(context, path):
         context.move_to(path[0].x, path[0].y)
@@ -388,13 +397,12 @@ def generate_skirt_cuts():
         context.rectangle(0, 0, width, height)
         context.set_source_rgba(0, 0, 0, 1)
         context.set_line_width(laser)
-        context.set_line_width(laser)
         context.stroke()
 
         context.save()
         context.translate(ALIGNMENT_PADDING-xmin, ALIGNMENT_PADDING-ymin)
-        draw_path(context, farthest)
-        draw_path(context, closest)
+        draw_path(context, offset(farthest, left=True, thickness=laser))
+        draw_path(context, offset(closest, left=True, thickness=laser))
         context.restore()
 
         context.restore()
