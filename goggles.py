@@ -338,18 +338,6 @@ def interior_mold(interior_shapes, max_skirt_y):
     o = o - solid.translate([-constants.ELLIPSIS_WIDTH/3, 0, constants.SHELL_MAX_HEIGHT*3/4])(gap)
     return o
 
-ALIGNMENT_PADDING = 30
-def alignment_base():
-    epsilon = 0.1
-    farthest, closest = skirt_xy_extents()
-    ymin = min(p.y for p in farthest)
-    ymax = max(p.y for p in farthest)
-    o = solid.cube([ALIGNMENT_PADDING, ymax-ymin, BASE_HEIGHT])
-    hole = solid.cube([ALIGNMENT_PADDING-2, ymax-ymin-2, BASE_HEIGHT+epsilon*2])
-    hole = solid.translate([1, 1, -epsilon])(hole)
-    o = o - hole
-    return o
-
 def back_clip():
     o = rounded_square2(constants.BACK_CLIP_X, constants.BACK_CLIP_Y, constants.BACK_CLIP_THICKNESS, constants.BACK_CLIP_RADIUS, adjust=True)
     a = rounded_square(constants.BACK_CLIP_X-constants.BACK_CLIP_THICKNESS*2-constants.BACK_CLIP_RADIUS, constants.BACK_CLIP_THICKNESS, 100, constants.BACK_CLIP_RADIUS, adjust=True)
@@ -379,7 +367,6 @@ def main():
     lc = lens.lens_clip(constants.LENS_GROOVE_HEIGHT, 3, math.pi/4)
     bc = back_clip()
     mold = skirt_mold()
-    ab = alignment_base()
 
     output = sh + sk # + lc + l
     if args.slice_a is not None or args.slice_x is not None or args.slice_y is not None or args.slice_z is not None:
@@ -397,7 +384,6 @@ def main():
         sh = sh - cut
         sk = sk - cut
         l = l - cut
-        ab = ab - cut
         mold = mold - cut
         output = output - cut
 
@@ -406,14 +392,12 @@ def main():
     solid.scad_render_to_file(sk, 'skirt.scad')
     solid.scad_render_to_file(bc, 'back-clip.scad')
     solid.scad_render_to_file(mold, 'mold.scad')
-    solid.scad_render_to_file(ab, 'alignment-base.scad')
 
     if args.export:
         utils.export('shell', 'stl')
         utils.export('skirt', 'stl')
         utils.export('mold', 'stl')
         utils.export('back-clip', 'stl')
-        utils.export('alignment-base', 'stl')
 
 
 main()
