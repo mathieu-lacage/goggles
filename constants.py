@@ -76,7 +76,7 @@ YALPHA = XALPHA*0.03
 SHELL_MAX_HEIGHT = UNIT*3
 SHELL_MAX_WIDTH = UNIT*2
 
-# Mold bounding box dimensions
+# Mold bounding box dimensions. Adjust to what you have
 MOLD_BB_X = 80
 MOLD_BB_Y = 50
 MOLD_BB_Z = 60
