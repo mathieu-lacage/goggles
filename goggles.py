@@ -288,33 +288,37 @@ def skirt_mold_bounding_box():
         bb.zmin-(constants.MOLD_BB_Z-(bb.zmax-bb.zmin))/2
     ])(o)
 
+#    o = solid.rotate([0, 40, 0])(o)
+
     return o
 
 
 def skirt_mold():
     path = ellipsis_path()
     shapes = [skirt_profile(i, constants.NSTEPS) for i in range(len(path))]
-    exterior_shapes = []
-    interior_shapes = []
+    top_shapes = []
+    bottom_shapes = []
     for shape in shapes:
         top = argmin(shape, key=lambda i: (i.y, i.x))
         bottom = argmax(shape, key=lambda i: (i.y, -i.x))
-        exterior = shape[top:] + shape[:bottom+1]
-        interior = shape[bottom:top]
-        interior_shapes.append(interior)
-        exterior_shapes.append(exterior)
+        top_shape = shape[top:] + shape[:bottom+1]
+        bottom_shape = shape[bottom:top]
+        bottom_shapes.append(bottom_shape)
+        top_shapes.append(top_shape)
 
-    interior_shapes = normalize_shapes(interior_shapes)
-    exterior_shapes = normalize_shapes(exterior_shapes)
-    max_skirt_y = max([p.max_y for p in exterior_shapes])
+    bottom_shapes = normalize_shapes(bottom_shapes)
+    top_shapes = normalize_shapes(top_shapes)
+    max_skirt_y = max([p.max_y for p in top_shapes])
     # interior mold
-    interior = interior_mold(interior_shapes, max_skirt_y)
+    bottom = bottom_mold(bottom_shapes, max_skirt_y)
 
-    a = exterior_mold(exterior_shapes)
-    bottom = a - solid.translate([-100, 0, -100])(solid.cube([200, 200, 200]))
-    top = a - solid.translate([-100, -200, -100])(solid.cube([200, 200, 200]))
+    top = top_mold(top_shapes)
 
-    return interior, bottom, top
+    bb = skirt_mold_bounding_box()
+    top = solid.intersection()([top, bb])
+    bottom = solid.intersection()([bottom, bb])
+
+    return bottom, top
 
 
 def normalize_shapes(shapes):
@@ -326,16 +330,17 @@ def normalize_shapes(shapes):
     return shapes
 
 MOLD_PADDING = 10
-def interior_mold(interior_shapes, max_skirt_y):
+def bottom_mold(bottom_shapes, max_skirt_y):
     path = ellipsis_path()
 
     epsilon = 0.001
     output = []
-    for shape in interior_shapes:
+    for shape in bottom_shapes:
         shape.append(y=-constants.SHELL_THICKNESS+epsilon)
         shape.append(x=-2)
         shape.append(y=max_skirt_y+MOLD_PADDING)
-        shape.append(x=shape.points[0].x)
+        shape.append(x=shape.points[0].x+50)
+        shape.append(y=shape.points[0].y)
         output.append(utils.eu3(shape.reversed_points))
 
     o = extrude_along_path(output, path, connect_ends=True)
@@ -347,12 +352,19 @@ def interior_mold(interior_shapes, max_skirt_y):
     return o
 
 
-def exterior_mold(exterior_shapes):
+def shape_length(shape):
+    length = 0
+    for i in range(1, len(shape.points)):
+        delta = shape.points[i] - shape.points[i-1]
+        length += delta.magnitude()
+    return length
+
+
+def top_mold(top_shapes):
     output = []
-    for shape in exterior_shapes:
+    for shape in top_shapes:
         shape = shape.copy()
-        shape.append(dy=50)
-        shape.append(dx=50)
+        shape.append(dx=20)
         shape.append(dy=-100)
         shape.append(x=shape.points[0].x)
         output.append(utils.eu3(shape.reversed_points))
@@ -365,8 +377,8 @@ def exterior_mold(exterior_shapes):
     filler = solid.translate([0, 0, -100-epsilon])(filler)
     o = o + filler
 
-    bb = skirt_mold_bounding_box()
-    o = solid.intersection()([o, bb])
+#    print(shape_length(top_shapes[0]))
+#    print(shape_length(top_shapes[int(len(top_shapes)/2)]))
 
     return o
 
@@ -399,8 +411,8 @@ def main():
 #    l = solid.translate([-0.2, 0, 0.05])(l)
     lc = lens.lens_clip(constants.LENS_GROOVE_HEIGHT, 3, math.pi/4)
     bc = back_clip()
-    interior_mold, bottom_mold, top_mold = skirt_mold()
-    mold = interior_mold
+    bottom_mold, top_mold = skirt_mold()
+    mold = bottom_mold
 
     output = sh + sk # + lc + l
     if args.slice_a is not None or args.slice_x is not None or args.slice_y is not None or args.slice_z is not None:
@@ -420,7 +432,6 @@ def main():
         l = l - cut
         top_mold = top_mold - cut
         bottom_mold = bottom_mold - cut
-        interior_mold = interior_mold - cut
         mold = mold - cut
         output = output - cut
 
@@ -428,15 +439,15 @@ def main():
     solid.scad_render_to_file(sh, 'shell.scad')
     solid.scad_render_to_file(sk, 'skirt.scad')
     solid.scad_render_to_file(bc, 'back-clip.scad')
-    solid.scad_render_to_file(interior_mold, 'interior-mold.scad')
     solid.scad_render_to_file(top_mold, 'top-mold.scad')
-    solid.scad_render_to_file(bottom_mold, 'bot-mold.scad')
+    solid.scad_render_to_file(bottom_mold, 'bottom-mold.scad')
     solid.scad_render_to_file(mold, 'mold.scad')
 
     if args.export:
         utils.export('shell', 'stl')
         utils.export('skirt', 'stl')
-        utils.export('interior-mold', 'stl')
+        utils.export('top-mold', 'stl')
+        utils.export('bottom-mold', 'stl')
         utils.export('mold', 'stl')
         utils.export('back-clip', 'stl')
 
