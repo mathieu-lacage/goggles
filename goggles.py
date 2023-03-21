@@ -309,9 +309,8 @@ def skirt_mold():
     bottom_shapes = normalize_shapes(bottom_shapes)
     top_shapes = normalize_shapes(top_shapes)
     max_skirt_y = max([p.max_y for p in top_shapes])
-    # interior mold
-    bottom = bottom_mold(bottom_shapes, max_skirt_y)
 
+    bottom = bottom_mold(bottom_shapes, max_skirt_y)
     top = top_mold(top_shapes)
 
     bb = skirt_mold_bounding_box()
@@ -330,6 +329,7 @@ def normalize_shapes(shapes):
     return shapes
 
 MOLD_PADDING = 10
+MOLD_OVERLAP = 2
 def bottom_mold(bottom_shapes, max_skirt_y):
     path = ellipsis_path()
 
@@ -348,6 +348,10 @@ def bottom_mold(bottom_shapes, max_skirt_y):
     filler = utils.ring(max_skirt_y+constants.SHELL_THICKNESS+MOLD_PADDING+2*epsilon, -constants.SKIRT_THICKNESS-0.5)
     filler = solid.translate([0, 0, -constants.SHELL_THICKNESS-epsilon])(filler)
     o = o + filler
+
+    filler2 = utils.ring(MOLD_OVERLAP, -constants.SKIRT_THICKNESS)
+    filler2 = solid.translate([0, 0, -MOLD_OVERLAP-constants.SHELL_THICKNESS-epsilon])(filler2)
+    o = o + filler2
 
     return o
 
@@ -374,7 +378,7 @@ def top_mold(top_shapes):
 
     epsilon = 0.01
     filler = utils.ring(100-constants.SHELL_THICKNESS, 0)
-    filler = solid.translate([0, 0, -100-epsilon])(filler)
+    filler = solid.translate([0, 0, -MOLD_OVERLAP-100-epsilon])(filler)
     o = o + filler
 
 #    print(shape_length(top_shapes[0]))
