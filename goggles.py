@@ -300,7 +300,7 @@ def skirt_mold():
     bottom_shapes = []
     for shape in shapes:
         top = argmin(shape, key=lambda i: (i.y, i.x))
-        bottom = argmax(shape, key=lambda i: (i.y, -i.x))
+        bottom = argmax(shape, key=lambda i: (i.x, i.y))
         top_shape = shape[top:] + shape[:bottom+1]
         bottom_shape = shape[bottom:top]
         bottom_shapes.append(bottom_shape)
@@ -314,7 +314,7 @@ def skirt_mold():
     top = top_mold(top_shapes)
 
     bb = skirt_mold_bounding_box()
-    top = solid.intersection()([top, bb])
+    #top = solid.intersection()([top, bb])
     bottom = solid.intersection()([bottom, bb])
 
     return bottom, top
