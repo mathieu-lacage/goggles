@@ -96,7 +96,8 @@ class _Points:
 class Path:
     def __init__(self, x=None, y=None, path=None, point=None, labels=None):
         if point is not None:
-            assert isinstance(point, Point)
+            assert hasattr(point, 'x') and hasattr(point, 'y')
+            point = Point(x=point.x, y=point.y)
             self._p = [point]
             self._labels = {}
         elif path is not None:
