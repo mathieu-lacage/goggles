@@ -233,7 +233,9 @@ def skirt_profile(i, n):
 
     return path.points
 
+
 BoundingBox = collections.namedtuple('BoundingBox', ['xmin', 'xmax', 'ymin', 'ymax', 'zmin', 'zmax'])
+
 
 def skirt_bounding_box():
     path = utils.ellipsis_path()
@@ -266,14 +268,12 @@ def skirt_mold_bounding_box():
     assert (bb.xmax-bb.xmin) <= constants.MOLD_BB_X
     assert (bb.ymax-bb.ymin) <= constants.MOLD_BB_Y
     assert (bb.zmax-bb.zmin) <= constants.MOLD_BB_Z
-
     xmin = bb.xmin-(constants.MOLD_BB_X-(bb.xmax-bb.xmin))/2
     xmax = bb.xmax+(constants.MOLD_BB_X-(bb.xmax-bb.xmin))/2
     ymin = bb.ymin-(constants.MOLD_BB_Y-(bb.ymax-bb.ymin))/2
     ymax = bb.ymax+(constants.MOLD_BB_Y-(bb.ymax-bb.ymin))/2
     zmin = bb.zmin-(constants.MOLD_BB_Z-(bb.zmax-bb.zmin))/2
     zmax = bb.zmax+(constants.MOLD_BB_Z-(bb.zmax-bb.zmin))/2
-
     return BoundingBox(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, zmin=zmin, zmax=zmax)
 
 
@@ -289,9 +289,7 @@ def skirt_mold_bounded():
     o = solid.hull()([c1, c2, c3, c4])
 
     bb = skirt_mold_bounding_box()
-
     o = solid.translate([bb.xmin, bb.ymin, bb.zmin])(o)
-
     return o
 
 
@@ -300,11 +298,33 @@ def top_split(split):
     right_top = solid.mirror([0, 1, 0])(left_top)
     return left_top + right_top
 
+
 def bottom_split(split):
     left_bottom = _split(split, True)
     right_bottom = solid.mirror([0, 1, 0])(left_bottom)
     return left_bottom + right_bottom
 
+
+def alignment_pin(x, y, z):
+    Pin = collections.namedtuple('Pin', ['male', 'female'])
+    pin_height = 4
+    pin_radius = 4
+
+    def pin(height, radius):
+        filet_radius = 1
+        profile = mg2.Path(x=radius, y=0)\
+            .append(dy=height-filet_radius)\
+            .extend_arc(alpha=math.pi/2, r=filet_radius)
+        path = [euclid3.Point3(x=math.cos(t), y=math.sin(t), z=0) for t in solid.utils.frange(0, 2*math.pi, constants.NSTEPS, include_end=False)]
+        shapes = [utils.eu3(profile.points) for i in range(len(path))]
+        o = extrude_along_path(shapes, path, connect_ends=True)
+        o = solid.hull()(o)
+        return o
+    male = pin(pin_height, pin_radius)
+    female = pin(pin_height+0.3, pin_radius+0.3)
+    male = solid.translate([x, y, z])(male)
+    female = solid.translate([x, y, z])(female)
+    return Pin(male=male, female=female)
 
 def _split(split, is_bottom):
     epsilon = 0.001
@@ -321,16 +341,24 @@ def _split(split, is_bottom):
         shapes.append(path)
     m = ggg.Shapes(shapes, ggg.Shapes.ENDS_CLOSE).mesh()
 
-    tmp = solid.cube([30, constants.MOLD_BB_Y+20, constants.MOLD_BB_Z+20], center=True)
+    ydelta = (constants.MOLD_BB_Y+20)/2
+    tmp = solid.cube([30, ydelta, constants.MOLD_BB_Z+20], center=True)
     reference = filtered[0]
-    tmp1 = solid.translate([reference.x-epsilon+30/2, 0, reference.z+bottom_sign*(constants.MOLD_BB_Z+20)/2])(tmp)
+    tmp1 = solid.translate([reference.x-epsilon+30/2, ydelta/2, reference.z+bottom_sign*(constants.MOLD_BB_Z+20)/2])(tmp)
     reference = filtered[-1]
-    tmp2 = solid.translate([reference.x+epsilon-30/2, 0, reference.z+bottom_sign*(constants.MOLD_BB_Z+20)/2])(tmp)
+    tmp2 = solid.translate([reference.x+epsilon-30/2, ydelta/2, reference.z+bottom_sign*(constants.MOLD_BB_Z+20)/2])(tmp)
 
     a = screwdriver_hole(filtered[0], x_positive=True)
     b = screwdriver_hole(filtered[-1], x_positive=False)
+    o = m.solidify() + tmp1 + tmp2 - a - b
 
-    return m.solidify() + tmp1 + tmp2 - a - b
+    bb = skirt_mold_bounding_box()
+    pin = alignment_pin(bb.xmax-10, bb.ymax-10, filtered[0].z-1)
+    if is_bottom:
+        o = o - pin.female
+    else:
+        o = o + pin.male
+    return o
 
 
 def skirt_mold():
@@ -376,8 +404,9 @@ def screwdriver_hole(p, x_positive):
     else:
         x = bb.xmin+1.8
     tmp = solid.cube([4, 6, 2], center=True)
-    tmp = solid.translate([x, 0, p.z])(tmp)
-    return tmp
+    o = solid.translate([x, 10, p.z])(tmp)
+    #o = solid.debug(o)
+    return o
 
 
 MOLD_OVERLAP = 2
@@ -418,6 +447,18 @@ def bottom_mold(bottom_shapes, max_skirt_y):
     return o + tmp
 
 
+def feeder():
+    bb = skirt_mold_bounding_box()
+
+    o = solid.cylinder(h=40, r1=2, r2=1, center=True, segments=20)
+    o = solid.translate([-constants.ELLIPSIS_WIDTH-4, 0, 0])(o)
+
+    base = solid.cylinder(h=2, r=4, center=True, segments=20)
+    base = solid.translate([-constants.ELLIPSIS_WIDTH-4, 0, bb.zmin])(base)
+
+    return o + base
+
+
 def top_mold(top_shapes):
     output = []
     for shape in top_shapes:
@@ -443,7 +484,7 @@ def top_mold(top_shapes):
         split.append(shape[max_index])
     tmp = top_split(split)
 
-    return o + tmp
+    return o + tmp - feeder()
 
 
 def back_clip():
