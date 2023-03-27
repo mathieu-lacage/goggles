@@ -11,7 +11,7 @@ import utils
 import lens
 import constants
 import transform
-#import ggg
+import ggg
 
 Point3 = euclid3.Point3
 
@@ -29,11 +29,6 @@ def argmin(items, key):
 def ellipsis_perpendicular(a, b, t):
     p = utils.ellipsis(a, b, t)
     return euclid3.Point3(p.x/a**2, p.y/b**2)
-
-
-def ellipsis_path(delta=0):
-    path = [utils.ellipsis(constants.ELLIPSIS_WIDTH+delta, constants.ELLIPSIS_HEIGHT+delta, t) for t in solid.utils.frange(0, 2*math.pi, constants.NSTEPS, include_end=False)]
-    return path
 
 
 def distance(alpha, threshold=0.5):
@@ -141,7 +136,7 @@ def shell():
             .append(dx=curve.width-epsilon)
         return utils.eu3(p1.reversed_points)
 
-    path1 = ellipsis_path()
+    path1 = utils.ellipsis_path()
     shapes1 = [profile(i, len(path1)) for i in range(len(path1))]
     o = extrude_along_path(shapes1, path1, connect_ends=True)
 #    o = solid.debug(o)
@@ -241,7 +236,7 @@ def skirt_profile(i, n):
 
 def skirt_bounding_box():
     BoundingBox = collections.namedtuple('BoundingBox', ['xmin', 'xmax', 'ymin', 'ymax', 'zmin', 'zmax'])
-    path = ellipsis_path()
+    path = utils.ellipsis_path()
     shapes = [utils.eu3(skirt_profile(i, constants.NSTEPS)) for i in range(len(path))]
     transformed = transform.to_path(shapes, path, True)
 
@@ -256,7 +251,7 @@ def skirt_bounding_box():
 
 
 def skirt():
-    path = ellipsis_path()
+    path = utils.ellipsis_path()
     shapes = [utils.eu3(skirt_profile(i, constants.NSTEPS)) for i in range(len(path))]
     o = extrude_along_path(shapes, path, connect_ends=True)
     o = solid.mirror([0, 1, 0])(o)
@@ -293,8 +288,43 @@ def skirt_mold_bounding_box():
     return o
 
 
+def top_split(split):
+    left_top = _split(split, False)
+    right_top = solid.mirror([0, 1, 0])(left_top)
+    return left_top + right_top
+
+def bottom_split(split):
+    left_bottom = _split(split, True)
+    right_bottom = solid.mirror([0, 1, 0])(left_bottom)
+    return left_bottom + right_bottom
+
+
+def _split(split, is_bottom):
+    epsilon = 0.001
+    filtered = [p for p in split if p.y >= 0]
+
+    bottom_sign = 1 if is_bottom else -1
+    shapes = []
+    for p in filtered:
+        path =     [ggg.Point3(x=p.x, y=p.y-epsilon,     z=p.z)]
+        path.append(ggg.Point3(x=p.x, y=p.y-epsilon+100, z=p.z))
+        path.append(ggg.Point3(x=p.x, y=p.y-epsilon+100, z=p.z+bottom_sign*100))
+        path.append(ggg.Point3(x=p.x, y=p.y-epsilon,     z=p.z+bottom_sign*100))
+        path = path if is_bottom else list(reversed(path))
+        shapes.append(path)
+    m = ggg.Shapes(shapes, ggg.Shapes.ENDS_CLOSE).mesh()
+
+    tmp = solid.cube([30, constants.MOLD_BB_Y+20, constants.MOLD_BB_Z+20], center=True)
+    reference = filtered[0]
+    tmp1 = solid.translate([reference.x-epsilon+30/2, 0, reference.z+bottom_sign*(constants.MOLD_BB_Z+20)/2])(tmp)
+    reference = filtered[-1]
+    tmp2 = solid.translate([reference.x+epsilon-30/2, 0, reference.z+bottom_sign*(constants.MOLD_BB_Z+20)/2])(tmp)
+
+    return m.solidify() + tmp1 + tmp2
+
+
 def skirt_mold():
-    path = ellipsis_path()
+    path = utils.ellipsis_path()
     shapes = [skirt_profile(i, constants.NSTEPS) for i in range(len(path))]
     top_shapes = []
     bottom_shapes = []
@@ -314,7 +344,7 @@ def skirt_mold():
     top = top_mold(top_shapes)
 
     bb = skirt_mold_bounding_box()
-    #top = solid.intersection()([top, bb])
+    top = solid.intersection()([top, bb])
     bottom = solid.intersection()([bottom, bb])
 
     return bottom, top
@@ -328,24 +358,29 @@ def normalize_shapes(shapes):
     shapes = [mg2.Path(path=shape) for shape in shapes]
     return shapes
 
-MOLD_PADDING = 10
-MOLD_OVERLAP = 2
-def bottom_mold(bottom_shapes, max_skirt_y):
-    path = ellipsis_path()
 
-    epsilon = 0.001
+MOLD_OVERLAP = 2
+
+
+def bottom_mold(bottom_shapes, max_skirt_y):
+    path = utils.ellipsis_path()
+
+    epsilon = 0
     output = []
     for shape in bottom_shapes:
         shape.append(y=-constants.SHELL_THICKNESS+epsilon)
         shape.append(x=-2)
-        shape.append(y=max_skirt_y+MOLD_PADDING)
-        shape.append(x=shape.points[0].x+50)
+        shape.append(y=max_skirt_y+100)
+        shape.append(x=shape.points[0].x)
         shape.append(y=shape.points[0].y)
         output.append(utils.eu3(shape.reversed_points))
 
-    o = extrude_along_path(output, path, connect_ends=True)
+    #o = extrude_along_path(output, path, connect_ends=True)
+    shapes = ggg.extrude(output).along_closed_path(path)
 
-    filler = utils.ring(max_skirt_y+constants.SHELL_THICKNESS+MOLD_PADDING+2*epsilon, -constants.SKIRT_THICKNESS-0.5)
+    o = shapes.mesh().solidify()
+
+    filler = utils.ring(max_skirt_y+constants.SHELL_THICKNESS+100+2*epsilon, -constants.SKIRT_THICKNESS-0.5)
     filler = solid.translate([0, 0, -constants.SHELL_THICKNESS-epsilon])(filler)
     o = o + filler
 
@@ -353,7 +388,13 @@ def bottom_mold(bottom_shapes, max_skirt_y):
     filler2 = solid.translate([0, 0, -MOLD_OVERLAP-constants.SHELL_THICKNESS-epsilon])(filler2)
     o = o + filler2
 
-    return o
+    split = []
+    for shape in shapes.shapes:
+        max_index = argmax(shape, key=lambda p: (p.x**2+p.y**2, -p.z))
+        split.append(shape[max_index])
+    tmp = bottom_split(split)
+
+    return o + tmp 
 
 
 def shape_length(shape):
@@ -368,23 +409,31 @@ def top_mold(top_shapes):
     output = []
     for shape in top_shapes:
         shape = shape.copy()
-        shape.append(dx=20)
         shape.append(dy=-100)
         shape.append(x=shape.points[0].x)
         output.append(utils.eu3(shape.reversed_points))
 
-    path = ellipsis_path()
-    o = extrude_along_path(output, path, connect_ends=True)
+    path = utils.ellipsis_path()
+    shapes = ggg.extrude(output).along_closed_path(path)
+
+    o = shapes.mesh().solidify()
+    #o = extrude_along_path(output, path, connect_ends=True)
 
     epsilon = 0.01
     filler = utils.ring(100-constants.SHELL_THICKNESS, 0)
     filler = solid.translate([0, 0, -MOLD_OVERLAP-100-epsilon])(filler)
     o = o + filler
 
+    split = []
+    for shape in shapes.shapes:
+        max_index = argmax(shape, key=lambda p: (p.x**2+p.y**2, p.z))
+        split.append(shape[max_index])
+    tmp = top_split(split)
+
 #    print(shape_length(top_shapes[0]))
 #    print(shape_length(top_shapes[int(len(top_shapes)/2)]))
 
-    return o
+    return o + tmp
 
 
 def back_clip():
@@ -416,7 +465,8 @@ def main():
     lc = lens.lens_clip(constants.LENS_GROOVE_HEIGHT, 3, math.pi/4)
     bc = back_clip()
     bottom_mold, top_mold = skirt_mold()
-    mold = bottom_mold
+    top_mold = solid.translate([0, 0, -0.3])(top_mold)
+    mold = bottom_mold + top_mold
 
     output = sh + sk # + lc + l
     if args.slice_a is not None or args.slice_x is not None or args.slice_y is not None or args.slice_z is not None:
