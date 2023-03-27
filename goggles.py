@@ -418,14 +418,6 @@ def bottom_mold(bottom_shapes, max_skirt_y):
     return o + tmp
 
 
-def shape_length(shape):
-    length = 0
-    for i in range(1, len(shape.points)):
-        delta = shape.points[i] - shape.points[i-1]
-        length += delta.magnitude()
-    return length
-
-
 def top_mold(top_shapes):
     output = []
     for shape in top_shapes:
@@ -450,9 +442,6 @@ def top_mold(top_shapes):
         max_index = argmax(shape, key=lambda p: (p.x**2+p.y**2, p.z))
         split.append(shape[max_index])
     tmp = top_split(split)
-
-#    print(shape_length(top_shapes[0]))
-#    print(shape_length(top_shapes[int(len(top_shapes)/2)]))
 
     return o + tmp
 
