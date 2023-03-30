@@ -309,6 +309,7 @@ def alignment_pin(x, y, z):
     Pin = collections.namedtuple('Pin', ['male', 'female'])
     pin_height = 4
     pin_radius = 4
+    pin_tolerance = 0.1
 
     def pin(height, radius):
         filet_radius = 1
@@ -320,8 +321,9 @@ def alignment_pin(x, y, z):
         o = extrude_along_path(shapes, path, connect_ends=True)
         o = solid.hull()(o)
         return o
+
     male = pin(pin_height, pin_radius)
-    female = pin(pin_height+0.3, pin_radius+0.3)
+    female = pin(pin_height+pin_tolerance, pin_radius+pin_tolerance)
     male = solid.translate([x, y, z])(male)
     female = solid.translate([x, y, z])(female)
     return Pin(male=male, female=female)
@@ -434,7 +436,8 @@ def bottom_mold(bottom_shapes, max_skirt_y):
     filler = solid.translate([0, 0, -constants.SHELL_THICKNESS-epsilon])(filler)
     o = o + filler
 
-    filler2 = utils.ring(MOLD_OVERLAP, -constants.SKIRT_THICKNESS)
+    mold_overlap_tolerance = 0.1
+    filler2 = utils.ring(MOLD_OVERLAP, -constants.SKIRT_THICKNESS-mold_overlap_tolerance)
     filler2 = solid.translate([0, 0, -MOLD_OVERLAP-constants.SHELL_THICKNESS-epsilon])(filler2)
     o = o + filler2
 
