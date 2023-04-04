@@ -453,10 +453,10 @@ def bottom_mold(bottom_shapes, max_skirt_y):
 def feeder():
     bb = skirt_mold_bounding_box()
 
-    o = solid.cylinder(h=40, r1=2, r2=1, center=True, segments=20)
+    o = solid.cylinder(h=40, r1=2.75, r2=2, center=True, segments=20)
     o = solid.translate([-constants.ELLIPSIS_WIDTH-4, 0, 0])(o)
 
-    base = solid.cylinder(h=2, r=4, center=True, segments=20)
+    base = solid.cylinder(h=2, r=7.1, center=True, segments=20)
     base = solid.translate([-constants.ELLIPSIS_WIDTH-4, 0, bb.zmin])(base)
 
     return o + base
