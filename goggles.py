@@ -309,7 +309,7 @@ def alignment_pin(x, y, z):
     Pin = collections.namedtuple('Pin', ['male', 'female'])
     pin_height = 4
     pin_radius = 4
-    pin_tolerance = 0.1
+    pin_tolerance = constants.TOLERANCE
 
     def pin(height, radius):
         filet_radius = 1
@@ -477,8 +477,8 @@ def top_mold(top_shapes):
     #o = extrude_along_path(output, path, connect_ends=True)
 
     epsilon = 0.01
-    filler = utils.ring(100-constants.SHELL_THICKNESS, 0)
-    filler = solid.translate([0, 0, -MOLD_OVERLAP-100-epsilon])(filler)
+    filler = utils.ring(100-constants.SHELL_THICKNESS+constants.TOLERANCE, 0)
+    filler = solid.translate([0, 0, -MOLD_OVERLAP-100-epsilon-constants.TOLERANCE])(filler)
     o = o + filler
 
     split = []
@@ -519,7 +519,7 @@ def main():
     lc = lens.lens_clip(constants.LENS_GROOVE_HEIGHT, 3, math.pi/4)
     bc = back_clip()
     bottom_mold, top_mold = skirt_mold()
-    top_mold = solid.translate([0, 0, -0.3])(top_mold)
+    #top_mold = solid.translate([0, 0, -0.3])(top_mold)
     mold = bottom_mold + top_mold
 
     output = sh + sk # + lc + l
