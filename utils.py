@@ -37,13 +37,25 @@ def ring(height, delta):
     return o
 
 
-def export(name, type):
+def export(name, type, resolution):
     import subprocess
     import os
     try:
-        os.mkdir('%s-%s' % (type, args.resolution))
+        os.mkdir('%s-%s' % (type, resolution))
     except:
         pass
-    subprocess.check_output(['/usr/bin/openscad', '-o', '%s-%s/%s.%s' % (type, constants.NSTEPS, name, type), '%s.scad' % name])
+    subprocess.check_output(['/usr/bin/openscad', '-o', '%s-%s/%s.%s' % (type, resolution, name, type), '%s.scad' % name])
 
 
+def slice(args):
+    if args.slice_a is not None:
+        cut = solid.rotate([0, 0, args.slice_a])(solid.translate([-0, 0, -100])(solid.cube([200, 200, 200])))
+    else:
+        cut = solid.cube([0, 0, 0])
+    if args.slice_x is not None:
+        cut = cut + solid.translate([args.slice_x, -50, -100])(solid.cube([200, 200, 200]))
+    if args.slice_y is not None:
+        cut = cut + solid.translate([-100, args.slice_y, -100])(solid.cube([200, 200, 200]))
+    if args.slice_z is not None:
+        cut = cut + solid.translate([-100, -50, args.slice_z])(solid.cube([200, 200, 200]))
+    return cut

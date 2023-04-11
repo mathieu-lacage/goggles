@@ -9,6 +9,7 @@ import mg2
 import utils
 import constants
 
+
 def myopia_correction(diopters, x_offset=0, y_offset=0):
     if diopters is None:
         return None
@@ -26,7 +27,8 @@ def myopia_correction(diopters, x_offset=0, y_offset=0):
     o = solid.translate([x_offset, y_offset, -delta])(o)
 #    o = solid.debug(o)
     return o
-    
+
+
 def lens_top(delta=0):
     epsilon = 0.01
     m2 = utils.ring(constants.LENS_GROOVE_HEIGHT+epsilon*2, -constants.LENS_GROOVE_DEPTH-constants.SKIRT_THICKNESS+delta)
@@ -40,6 +42,7 @@ def lens_top(delta=0):
     l = solid.color("grey", 0.7)(l)
     return l
 
+
 def lens_bottom(correction=None, delta=0):
 #    print(2*(constants.ELLIPSIS_WIDTH-constants.SKIRT_THICKNESS), 2*(constants.ELLIPSIS_HEIGHT-constants.SKIRT_THICKNESS))
     epsilon = 0.01
@@ -49,12 +52,12 @@ def lens_bottom(correction=None, delta=0):
     l = l + solid.translate([0, 0, constants.LENS_BOTTOM_RING_HEIGHT-epsilon])(m1)
     if correction is not None:
         l = l - correction
-    
 
     l = solid.mirror([0, 0, 1])(l)
     l = solid.translate([0, 0, 0])(l)
     l = solid.color("grey", 0.7)(l)
     return l
+
 
 def lens(correction=None):
     #
@@ -87,7 +90,6 @@ def lens(correction=None):
     l = l + solid.translate([0, 0, -(constants.LENS_BOTTOM_RING_HEIGHT+constants.SHELL_THICKNESS+constants.SKIRT_SQUASHED_THICKNESS)])(top)
     l = solid.translate([0, 0, constants.LENS_BOTTOM_RING_HEIGHT+constants.SKIRT_SQUASHED_THICKNESS])(l)
     return l
-
 
 
 def generate_lens_svg():
@@ -150,7 +152,6 @@ def generate_lens_svg():
         context.restore()
 
 
-
 def lens_clip(height, width, alpha):
     a = utils.ring(height, width)
     b = utils.ring(height+2, -constants.LENS_GROOVE_DEPTH-constants.SKIRT_THICKNESS)
@@ -171,8 +172,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-r', '--resolution', default=40, type=int)
     parser.add_argument('-e', '--export', action='store_true')
-    parser.add_argument('--slice-h', default=None, type=float)
-    parser.add_argument('--slice-v', default=None, type=float)
+    parser.add_argument('--slice-x', default=None, type=float)
+    parser.add_argument('--slice-y', default=None, type=float)
+    parser.add_argument('--slice-z', default=None, type=float)
+    parser.add_argument('--slice-a', default=None, type=float)
     parser.add_argument('--diopters', default=None, type=float)
     parser.add_argument('--x-offset', default=0, type=float)
     parser.add_argument('--y-offset', default=0, type=float)
@@ -185,13 +188,8 @@ def main():
 
     assembly = l + lc
 
-    if args.slice_v is not None or args.slice_h is not None:
-        if args.slice_v is not None:
-            cut = solid.rotate([0,0,args.slice_v])(solid.translate([-100,0,-100])(solid.cube([200,200,200])))
-        else:
-            cut = solid.cube([0,0,0])
-        if args.slice_h is not None:
-            cut = cut + solid.translate([-100,-50,args.slice_h])(solid.cube([200,200,200]))
+    if args.slice_a is not None or args.slice_x is not None or args.slice_y is not None or args.slice_z is not None:
+        cut = utils.slice(args)
         lc = lc - cut
         l = l - cut
         assembly = assembly - cut
@@ -200,10 +198,11 @@ def main():
     solid.scad_render_to_file(assembly, 'lens-assembly.scad')
 
     if args.export:
-        utils.export('lens', 'stl')
-        utils.export('lens-clip', 'stl')
+        utils.export('lens', 'stl', args.resolution)
+        utils.export('lens-clip', 'stl', args.resolution)
 
     generate_lens_svg()
+
 
 if __name__ == '__main__':
     main()

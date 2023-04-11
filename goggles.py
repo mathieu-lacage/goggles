@@ -519,18 +519,9 @@ def main():
     #top_mold = solid.translate([0, 0, -0.3])(top_mold)
     mold = bottom_mold + top_mold
 
-    output = sh + sk # + lc + l
+    output = sh + sk + lc + l
     if args.slice_a is not None or args.slice_x is not None or args.slice_y is not None or args.slice_z is not None:
-        if args.slice_a is not None:
-            cut = solid.rotate([0, 0, args.slice_a])(solid.translate([-0, 0, -100])(solid.cube([200, 200, 200])))
-        else:
-            cut = solid.cube([0, 0, 0])
-        if args.slice_x is not None:
-            cut = cut + solid.translate([args.slice_x, -50, -100])(solid.cube([200, 200, 200]))
-        if args.slice_y is not None:
-            cut = cut + solid.translate([-100, args.slice_y, -100])(solid.cube([200, 200, 200]))
-        if args.slice_z is not None:
-            cut = cut + solid.translate([-100, -50, args.slice_z])(solid.cube([200, 200, 200]))
+        cut = utils.slice(args)
         lc = lc - cut
         sh = sh - cut
         sk = sk - cut
@@ -549,11 +540,11 @@ def main():
     solid.scad_render_to_file(mold, 'mold.scad')
 
     if args.export:
-        utils.export('shell', 'stl')
-        utils.export('skirt', 'stl')
-        utils.export('top-mold', 'stl')
-        utils.export('bottom-mold', 'stl')
-        utils.export('back-clip', 'stl')
+        utils.export('shell', 'stl', args.resolution)
+        utils.export('skirt', 'stl', args.resolution)
+        utils.export('top-mold', 'stl', args.resolution)
+        utils.export('bottom-mold', 'stl', args.resolution)
+        utils.export('back-clip', 'stl', args.resolution)
 
 
 main()
