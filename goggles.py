@@ -519,7 +519,8 @@ def main():
     #top_mold = solid.translate([0, 0, -0.3])(top_mold)
     mold = bottom_mold + top_mold
 
-    output = sh + sk + lc + l
+    #output = sh + sk + lc + l
+    output = sh + l
     if args.slice_a is not None or args.slice_x is not None or args.slice_y is not None or args.slice_z is not None:
         cut = utils.slice(args)
         lc = lc - cut
