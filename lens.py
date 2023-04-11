@@ -4,7 +4,7 @@ import math
 import solid
 import solid.utils
 
-from extrude_along_path import extrude_along_path
+import ggg
 import mg2
 import utils
 import constants
@@ -161,7 +161,7 @@ def lens_alignment():
         .append(dx=bottom_width+1)\
         .append(dy=0, dx=1, relative_to="start")
     path = [utils.ellipsis(constants.ELLIPSIS_WIDTH, constants.ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(2*math.pi/constants.NSTEPS, 2*math.pi, constants.NSTEPS, include_end=False)]
-    o = extrude_along_path(utils.eu3(profile.reversed_points), path, connect_ends=True)
+    o = ggg.extrude(profile.reversed_points).along_closed_path(path).mesh().solidify()
     return o
 
 

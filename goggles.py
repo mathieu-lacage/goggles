@@ -4,7 +4,6 @@ import collections
 import solid
 import solid.utils
 import euclid3
-from extrude_along_path import extrude_along_path
 
 import mg2
 import utils
@@ -138,13 +137,13 @@ def shell():
 
     path1 = utils.ellipsis_path()
     shapes1 = [profile(i, len(path1)) for i in range(len(path1))]
-    o = extrude_along_path(shapes1, path1, connect_ends=True)
+    o = ggg.extrude(shapes1).along_closed_path(path1).mesh().solidify()
 #    o = solid.debug(o)
 
     path2 = [utils.ellipsis(constants.ELLIPSIS_WIDTH, constants.ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(-constants.TOP_ATTACHMENT_WIDTH*2*math.pi, constants.TOP_ATTACHMENT_WIDTH*2*math.pi, TOP_ATTACHMENT_RESOLUTION, include_end=True)]
     shapes2 = [top_attachment_profile(i, len(path2)) for i in range(len(path2))]
     #top_attachment = ggg.extrude(top_attachment_profile).along_open_path(path2).solidify()
-    top_attachment = extrude_along_path(shapes2, path2, connect_ends=False, cap_ends=True)
+    top_attachment = ggg.extrude(shapes2).along_open_path(path2).mesh().solidify()
     top_attachment = top_attachment -\
         solid.translate([constants.ELLIPSIS_WIDTH+constants.SHELL_TOP_X+constants.SHELL_THICKNESS+constants.SHELL_MIN_WIDTH+constants.TOOTH_WIDTH/2, 0, -10])(
             rounded_square(1.5*constants.SHELL_THICKNESS, 1.5*constants.SHELL_THICKNESS, 20, constants.SHELL_THICKNESS/2)
@@ -179,7 +178,7 @@ def shell():
         
     path3 = [utils.ellipsis(constants.ELLIPSIS_WIDTH, constants.ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(math.pi-constants.BOTTOM_ATTACHMENT_WIDTH*2*math.pi, math.pi+constants.BOTTOM_ATTACHMENT_WIDTH*2*math.pi, BOTTOM_ATTACHMENT_RESOLUTION)]
     shapes3 = [bottom_attachment_profile(i, len(path3)) for i in range(len(path3))]
-    bottom_attachment = extrude_along_path(shapes3, path3)
+    bottom_attachment = ggg.extrude(shapes3).along_open_path(path3).mesh().solidify()
 
     bah = rounded_square(constants.SHELL_BOTTOM_HOLE_HEIGHT, constants.SHELL_BOTTOM_HOLE_WIDTH, 20, constants.SHELL_THICKNESS/2)
     c = shell_curve(0.5)
@@ -255,7 +254,7 @@ def skirt_bounding_box():
 def skirt():
     path = utils.ellipsis_path()
     shapes = [utils.eu3(skirt_profile(i, constants.NSTEPS)) for i in range(len(path))]
-    o = extrude_along_path(shapes, path, connect_ends=True)
+    o = ggg.extrude(shapes).along_closed_path(path).mesh().solidify()
     o = solid.mirror([0, 1, 0])(o)
     o = solid.translate([0, 0, 0])(o)
     o = solid.color("grey")(o)
@@ -318,7 +317,7 @@ def alignment_pin(x, y, z):
             .extend_arc(alpha=math.pi/2, r=filet_radius)
         path = [euclid3.Point3(x=math.cos(t), y=math.sin(t), z=0) for t in solid.utils.frange(0, 2*math.pi, constants.NSTEPS, include_end=False)]
         shapes = [utils.eu3(profile.points) for i in range(len(path))]
-        o = extrude_along_path(shapes, path, connect_ends=True)
+        o = ggg.extrude(shapes).along_closed_path(path).mesh().solidify()
         o = solid.hull()(o)
         return o
 
@@ -427,7 +426,6 @@ def bottom_mold(bottom_shapes, max_skirt_y):
         shape.append(y=shape.points[0].y)
         output.append(utils.eu3(shape.reversed_points))
 
-    #o = extrude_along_path(output, path, connect_ends=True)
     shapes = ggg.extrude(output).along_closed_path(path)
 
     o = shapes.mesh().solidify()
@@ -474,7 +472,6 @@ def top_mold(top_shapes):
     shapes = ggg.extrude(output).along_closed_path(path)
 
     o = shapes.mesh().solidify()
-    #o = extrude_along_path(output, path, connect_ends=True)
 
     epsilon = 0.01
     filler = utils.ring(100-constants.SHELL_THICKNESS+constants.TOLERANCE, 0)
