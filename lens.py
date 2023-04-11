@@ -4,8 +4,6 @@ import math
 import solid
 import solid.utils
 
-import ggg
-import mg2
 import utils
 import constants
 
