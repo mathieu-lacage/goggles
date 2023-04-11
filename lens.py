@@ -181,8 +181,6 @@ def main():
     constants.NSTEPS = args.resolution
     correction = myopia_correction(diopters=args.diopters, x_offset=args.x_offset, y_offset=args.y_offset)
     l = lens(correction=correction)
-    ltop = lens_top()
-    lbot = lens_bottom(correction=correction)
     lc = lens_clip(constants.LENS_GROOVE_HEIGHT, 2, math.pi/4)
 
     assembly = l + lc
@@ -195,20 +193,14 @@ def main():
         if args.slice_h is not None:
             cut = cut + solid.translate([-100,-50,args.slice_h])(solid.cube([200,200,200]))
         lc = lc - cut
-        ltop = ltop - cut
-        lbot = lbot - cut
         l = l - cut
         assembly = assembly - cut
     solid.scad_render_to_file(lc, 'lens-clip.scad')
     solid.scad_render_to_file(l, 'lens.scad')
-    solid.scad_render_to_file(ltop, 'lens-top.scad')
-    solid.scad_render_to_file(lbot, 'lens-bot.scad')
     solid.scad_render_to_file(assembly, 'lens-assembly.scad')
 
     if args.export:
         utils.export('lens', 'stl')
-        utils.export('lens-top', 'stl')
-        utils.export('lens-bot', 'stl')
         utils.export('lens-clip', 'stl')
 
     generate_lens_svg()
