@@ -151,20 +151,6 @@ def generate_lens_svg():
 
 
 
-def lens_alignment():
-    bottom_width = constants.LENS_BOTTOM_RING_WIDTH*2/3
-    profile = mg2.Path(x=bottom_width, y=0)\
-        .label("start") \
-        .append(dy=constants.LENS_BOTTOM_RING_HEIGHT)\
-        .append(dx=-bottom_width, dy=constants.SHELL_THICKNESS+constants.SKIRT_SQUASHED_THICKNESS+constants.LENS_GROOVE_HEIGHT)\
-        .append(dy=constants.LENS_TOP_HEIGHT)\
-        .append(dx=bottom_width+1)\
-        .append(dy=0, dx=1, relative_to="start")
-    path = [utils.ellipsis(constants.ELLIPSIS_WIDTH, constants.ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(2*math.pi/constants.NSTEPS, 2*math.pi, constants.NSTEPS, include_end=False)]
-    o = ggg.extrude(profile.reversed_points).along_closed_path(path).mesh().solidify()
-    return o
-
-
 def lens_clip(height, width, alpha):
     a = utils.ring(height, width)
     b = utils.ring(height+2, -constants.LENS_GROOVE_DEPTH-constants.SKIRT_THICKNESS)
@@ -197,7 +183,6 @@ def main():
     l = lens(correction=correction)
     ltop = lens_top()
     lbot = lens_bottom(correction=correction)
-    la = lens_alignment()
     lc = lens_clip(constants.LENS_GROOVE_HEIGHT, 2, math.pi/4)
 
     assembly = l + lc
@@ -213,13 +198,11 @@ def main():
         ltop = ltop - cut
         lbot = lbot - cut
         l = l - cut
-        la = la - cut
         assembly = assembly - cut
     solid.scad_render_to_file(lc, 'lens-clip.scad')
     solid.scad_render_to_file(l, 'lens.scad')
     solid.scad_render_to_file(ltop, 'lens-top.scad')
     solid.scad_render_to_file(lbot, 'lens-bot.scad')
-    solid.scad_render_to_file(la, 'lens-alignment.scad')
     solid.scad_render_to_file(assembly, 'lens-assembly.scad')
 
     if args.export:
@@ -227,7 +210,6 @@ def main():
         utils.export('lens-top', 'stl')
         utils.export('lens-bot', 'stl')
         utils.export('lens-clip', 'stl')
-        utils.export('lens-alignment', 'stl')
 
     generate_lens_svg()
 
