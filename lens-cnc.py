@@ -6,7 +6,6 @@ import solid.utils
 
 import utils
 import constants
-import lens
 
 
 def myopia_correction(diopters, x_offset=0, y_offset=0):
