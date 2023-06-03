@@ -4,26 +4,61 @@ import math
 import solid
 import solid.utils
 
+import ggg
 import utils
 import constants
+
+
+def diopters_to_radius(diopters):
+    assert diopters <= 4
+    n2 = 1.49  # PMMA
+    n1 = 1  # air
+    # lens maker equation applied to a plano-concave lens
+    R1 = (n2/n1 - 1) / diopters
+    # convert meters to millimeters
+    R1 = R1*1000
+    return R1
 
 
 def myopia_correction(diopters, x_offset=0, y_offset=0):
     if diopters is None:
         return None
-    assert diopters <= 4
-    n2 = 1.49 # PMMA
-    n1 = 1 # air
-    # lens maker equation applied to a plano-concave lens
-    R1 = (n2/n1 - 1) / diopters
-    # convert meters to millimeters
-    R1 = R1*1000
-
+    R1 = diopters_to_radius(diopters)
     half_width = max(constants.ELLIPSIS_WIDTH + math.fabs(x_offset), constants.ELLIPSIS_HEIGHT + math.fabs(y_offset)) - constants.SKIRT_THICKNESS
     delta = math.sqrt(R1**2-half_width**2)
     o = solid.sphere(r=R1, segments=500)
     o = solid.translate([x_offset, y_offset, delta])(o)
-    #o = solid.debug(o)
+    return o
+
+
+def half_circle(r, n):
+    path = [ggg.Point3(r*math.cos(t), r*math.sin(t), 0) for t in solid.utils.frange(9*math.pi/10, 11*math.pi/10, n, include_end=False)]
+    return path
+
+
+def torus(r1, r2, n=constants.NSTEPS):
+    c1 = half_circle(r1, n)
+    c2 = half_circle(r2, n)
+    o = ggg.extrude(list(reversed(c1))).along_open_path(c2).mesh().solidify()
+    return o
+
+
+def astigmatism_correction(d1, d2, d2_angle, x_offset=0, y_offset=0):
+    if d2 is None:
+        return myopia_correction(d1, x_offset=x_offset, y_offset=y_offset)
+    r1 = diopters_to_radius(d1)
+    r2 = diopters_to_radius(d2)
+    r1, r2 = (r1, r2) if r1 > r2 else (r2, r1)
+    o = torus(r1, r1-r2, n=100)
+    o = solid.translate([-r2, 0, 0])(o)
+    o = solid.rotate([0, 90, 0])(o)
+    o = solid.rotate([0, 0, d2_angle])(o)
+    half_width1 = max(constants.ELLIPSIS_WIDTH + math.fabs(x_offset), constants.ELLIPSIS_HEIGHT + math.fabs(y_offset)) - constants.SKIRT_THICKNESS
+    half_width2 = max(constants.ELLIPSIS_WIDTH + math.fabs(x_offset), constants.ELLIPSIS_HEIGHT + math.fabs(y_offset)) - constants.SKIRT_THICKNESS
+    delta1 = r1-math.sqrt(r1**2-half_width1**2)
+    delta2 = r2-math.sqrt(r2**2-half_width2**2)
+    delta = min(delta1, delta2)
+    o = solid.translate([x_offset, y_offset, -delta])(o)
     return o
 
 
@@ -47,19 +82,27 @@ def main():
     parser.add_argument('--slice-y', default=None, type=float)
     parser.add_argument('--slice-z', default=None, type=float)
     parser.add_argument('--slice-a', default=None, type=float)
-    parser.add_argument('--diopters', default=None, type=float)
+    parser.add_argument('--myopia-diopters', default=None, type=float)
+    parser.add_argument('--astigmatism-diopters', default=None, type=float)
+    parser.add_argument('--astigmatism-angle', default=None, type=float)
     parser.add_argument('--x-offset', default=0, type=float)
     parser.add_argument('--y-offset', default=0, type=float)
     args = parser.parse_args()
 
     constants.NSTEPS = args.resolution
-    correction = myopia_correction(diopters=args.diopters, x_offset=args.x_offset, y_offset=args.y_offset)
-    l = lens_cnc(correction=correction)
+    correction = astigmatism_correction(
+        d1=args.myopia_diopters,
+        d2=args.astigmatism_diopters,
+        d2_angle=args.astigmatism_angle, 
+        x_offset=args.x_offset,
+        y_offset=args.y_offset
+    )
+    lens = lens_cnc(correction=correction)
 
     if args.slice_a is not None or args.slice_x is not None or args.slice_y is not None or args.slice_z is not None:
         cut = utils.slice(args)
-        l = l - cut
-    solid.scad_render_to_file(l, 'lens-cnc.scad')
+        lens = lens - cut
+    solid.scad_render_to_file(lens, 'lens-cnc.scad')
 
     if args.export:
         utils.export('lens-cnc', 'stl', args.resolution)
