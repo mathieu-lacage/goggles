@@ -8,9 +8,18 @@ import ggg
 import utils
 import constants
 
+MATERIAL_PMMA = 'pmma'
+MATERIAL_PC = 'pc'
 
-def diopters_to_radius(diopters):
+
+def diopters_to_radius(diopters, material):
     assert diopters <= 4
+    if material == MATERIAL_PMMA:
+        n2 = 1.49
+    elif material == MATERIAL_PC:
+        n2 = 1.56
+    else:
+        assert False
     n2 = 1.49  # PMMA
     n1 = 1  # air
     # lens maker equation applied to a plano-concave lens
@@ -20,10 +29,10 @@ def diopters_to_radius(diopters):
     return R1
 
 
-def myopia_correction(diopters, x_offset=0, y_offset=0):
+def myopia_correction(diopters, material, x_offset=0, y_offset=0):
     if diopters is None:
         return None
-    R1 = diopters_to_radius(diopters)
+    R1 = diopters_to_radius(diopters, material)
     half_width = max(constants.ELLIPSIS_WIDTH + math.fabs(x_offset), constants.ELLIPSIS_HEIGHT + math.fabs(y_offset)) - constants.SKIRT_THICKNESS
     delta = math.sqrt(R1**2-half_width**2)
     o = solid.sphere(r=R1, segments=500)
@@ -43,11 +52,11 @@ def torus(r1, r2, n=constants.NSTEPS):
     return o
 
 
-def astigmatism_correction(d1, d2, d2_angle, x_offset=0, y_offset=0):
+def astigmatism_correction(d1, d2, d2_angle, material, x_offset=0, y_offset=0):
     if d2 is None:
-        return myopia_correction(d1, x_offset=x_offset, y_offset=y_offset)
-    r1 = diopters_to_radius(d1)
-    r2 = diopters_to_radius(d2)
+        return myopia_correction(d1, material, x_offset=x_offset, y_offset=y_offset)
+    r1 = diopters_to_radius(d1, material)
+    r2 = diopters_to_radius(d2, material)
     r1, r2 = (r1, r2) if r1 > r2 else (r2, r1)
     o = torus(r1, r1-r2, n=100)
     o = solid.translate([-r2, 0, 0])(o)
@@ -87,13 +96,15 @@ def main():
     parser.add_argument('--astigmatism-angle', default=None, type=float)
     parser.add_argument('--x-offset', default=0, type=float)
     parser.add_argument('--y-offset', default=0, type=float)
+    parser.add_argument('--material', default=MATERIAL_PMMA, choices=[MATERIAL_PMMA, MATERIAL_PC])
     args = parser.parse_args()
 
     constants.NSTEPS = args.resolution
     correction = astigmatism_correction(
         d1=args.myopia_diopters,
         d2=args.astigmatism_diopters,
-        d2_angle=args.astigmatism_angle, 
+        d2_angle=args.astigmatism_angle,
+        material=args.material,
         x_offset=args.x_offset,
         y_offset=args.y_offset
     )
