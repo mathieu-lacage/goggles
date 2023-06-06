@@ -20,7 +20,6 @@ def diopters_to_radius(diopters, material):
         n2 = 1.56
     else:
         assert False
-    n2 = 1.49  # PMMA
     n1 = 1  # air
     # lens maker equation applied to a plano-concave lens
     R1 = (n2/n1 - 1) / diopters

@@ -142,12 +142,10 @@ def shell():
 
     path2 = [utils.ellipsis(constants.ELLIPSIS_WIDTH, constants.ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(-constants.TOP_ATTACHMENT_WIDTH*2*math.pi, constants.TOP_ATTACHMENT_WIDTH*2*math.pi, TOP_ATTACHMENT_RESOLUTION, include_end=True)]
     shapes2 = [top_attachment_profile(i, len(path2)) for i in range(len(path2))]
-    #top_attachment = ggg.extrude(top_attachment_profile).along_open_path(path2).solidify()
     top_attachment = ggg.extrude(shapes2).along_open_path(path2).mesh().solidify()
-    top_attachment = top_attachment -\
-        solid.translate([constants.ELLIPSIS_WIDTH+constants.SHELL_TOP_X+constants.SHELL_THICKNESS+constants.SHELL_MIN_WIDTH+constants.TOOTH_WIDTH/2, 0, -10])(
-            rounded_square(1.5*constants.SHELL_THICKNESS, 1.5*constants.SHELL_THICKNESS, 20, constants.SHELL_THICKNESS/2)
-        )
+    top_hole = rounded_square(1.5*constants.SHELL_THICKNESS, 1.5*constants.SHELL_THICKNESS, 20, constants.SHELL_THICKNESS/2)
+    top_hole = solid.translate([constants.ELLIPSIS_WIDTH+shell_curve(0).width+constants.SHELL_TOP_X+constants.SHELL_THICKNESS+constants.TOOTH_WIDTH/2-0.2, 0, -10])(top_hole)
+    top_attachment = top_attachment - top_hole
     o = o + top_attachment
 
     BOTTOM_ATTACHMENT_HEIGHT = 2
@@ -519,8 +517,8 @@ def main():
     #top_mold = solid.translate([0, 0, -0.3])(top_mold)
     mold = bottom_mold + top_mold
 
-    #output = sh + sk + lc + l
-    output = sh + l
+    output = l + sh + lc
+    #output = sh + l + lc
     if args.slice_a is not None or args.slice_x is not None or args.slice_y is not None or args.slice_z is not None:
         cut = utils.slice(args)
         lc = lc - cut
