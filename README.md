@@ -30,43 +30,55 @@ goggles.
 
 Because the patent is abandoned, and, Hektometer goggles have not been available 
 for sale since 2020, this project documents how I made a pair for myself using
-hardware from my local FabLab, [SoFAB](https://www.sofab.tv/).
+hardware from my local FabLab, [SoFAB](https://www.sofab.tv/). Even though the principles
+of operation are similar, the design is fairly different, to adapt to the production
+tools that were available to me and potentially other makers.
 
-## How to make one yourself
+# How to make one yourself
 
-### What you need
+## What you need
 
 1. For the inner flexible skirt:
-   - A resin 3D printer. I used a [Formlab Form 3B+](https://formlabs.com/3d-printers/form-3b/).
-   - Resin for flex parts. I used [Flexible 80A](https://formlabs.com/fr/materials/flexible-elastic/).
+   - A resin 3D printer for the mold. I used a [Formlab Form 3B+](https://formlabs.com/3d-printers/form-3b/).
+   - Resin for the mold. I used [Grey Pro](https://formlabs.com/fr/boutique/materials/grey-pro-resin/).
+   - 12 5x20 threaded screws to hold together the aluminium overmold
+   - 10mm thick aluminium plates for the overmold. I bought 2 10x100x500 plates from [Blockenstock](https://www.blockenstock.fr/)
+   - Something to cut 10mm tick aluminium plates. I used the services from [Decouplaser](https://www.decouplaser.fr/), a local metal shop
+   - A drill press with drill bits (diameter 6) for aluminium.
+   - Threading bits for aluminium. Kindly provided by a maker, Guy Mausy.
+   - A plastic  injection machine. I used a [Holipress](https://holimaker.fr/holipress/) from [Holimaker](https://holimaker.fr/)
+   - TPU Plastic pellets. I used [SEBS 90A](https://boutique.3dadvance.fr/fablab/1199-granules-de-sebs-shore-90a-holimaker), the recommended flex pellets from the machine builder.
 
-2. For the other 3D-printed parts:
-   - A simple extrusion 3D printer
-   - PETG or PLA filament
+2. For the outer rigid shell
+   - A resin 3D printer. I used a [Formlab Form 3B+](https://formlabs.com/3d-printers/form-3b/).
+   - Resin for rigid parts. I used [Grey Pro](https://formlabs.com/fr/boutique/materials/grey-pro-resin/).
 
 3. For the lenses:
-   - Transparent Acrylic/PMMA/Plexiglas sheets (2mm and 3mm thick).
+   - Transparent Acrylic/PMMA/Plexiglas sheets (6mm thick).
    - A router. I used an [Origin](https://www.shapertools.com/en-de/origin-overview). A manual router should work too 
-     but it will be challenging to make accurate guides for the lens shapes.
-   - Glue for acrylic sheets. I used [Acrifix 0192](https://www.plexiglas.de/files/plexiglas-content/pdf/technische-informationen/391-20-ACRIFIX-1R-0192-en.pdf)
-   - a UV lamp to speed up the curing process for the acrylic glue I used. Alternatively, the sun is a fine replacement.
+     but it might be challenging to make accurate guides for the lens shapes.
+   - A grover. I made one with sheets of wood, screws, and a dremel.
 
-4. For assembly:
+4. For the lens clip assembly:
+   - A simple extrusion 3D printer. I used a [Prusa MK3](https://www.prusa3d.com/product/original-prusa-i3-mk3s-3d-printer-3/)
+   - PETG or PLA filament
+ 
+5. For assembly:
    - A silicon band to attach the left and right side of the goggles. I spent 4 EUR on
      [swedish-style swim goggles](https://malmsten.com/en/products/p/swim-goggles/swedish-goggles/swedish-goggles-classic/2168/2357/1710021)
      to reuse the band that came with them. You should be able to find a similar-looking pair in any swim store online. 
      [Replacement bands](https://malmsten.com/en/products/p/swim-goggles/swedish-goggles/swedish-goggles-spare-part-kit/2168/2357/1750001) 
      can often be bought separately.
 
-5. For the lens correction:
+6. For the lens correction:
    - A CNC if you can afford it for precision. I used a [Roland MDX-50](https://www.rolanddga.com/products/3d/mdx-50-benchtop-cnc-mill).
      Alternatively, if your correction prescription is limited to small-scale myopia, great care and 
      patience will replace the CNC if you are willing to live with
      imperfect corrective lenses. 
-   - Sand paper, for wet use, grit sizes 150, 180, 240, 320, 400, 600, 800, 1000, 2000, 2500, 3000, 4000.
+   - Sand paper, for wet use, grit sizes 150, 180, 240, 320, 400, 600, 800, 1000, 2000, 2500, 3000, 4000, 5000
    - Polishing paste. I recommend a car headlight polishing kit as they are cheap, and are commonly available.
 
-### Get the models
+## Get the models
 
 It is is easy to [download](https://github.com/mathieu-lacage/goggles/releases/download/v0.1/goggles-0.1.zip) 
 all the STLs and SVGs from the project release page.
@@ -82,7 +94,7 @@ $ ./goggles.py -r 400 -e
 
 The resulting STLs will be located in the stl-400 subdirectory and the lens.svg file next to your goggles.py file.
 
-### Print parts
+## Print parts
 
 #### The flex skirt
 
