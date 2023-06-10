@@ -2,11 +2,24 @@
 
 What is special about these goggles ?
 
-1. Both hands are free while swiming down
+1. They are a practical way to freedive
 2. You can make them yourself
 3. You can make corrective lenses to match your eyesight
 
-## How they work
+Here is a short comparison chart that illustrates alternatives
+
+|                |  Max depth |  Ear Equalization       | Eye equalization | Field of view | Optical deformations
+| Diving goggles |  None      |  Hands free (nose clip) | Not needed       | +++           | -
+| Normal goggles |  10m       |  Hands free (nose clip) | Impossible       | +++           | -
+| Fluid goggles  |  None      |  Hands free (nose clip) | Not needed       | +             | ---
+| Diving mask    |  None      |  BTV, Valsava, etc.     | Air from lungs   | +++           | -
+
+
+# How they work
+
+These are freediving goggles, not swimming goggles. You could conceivably use these
+goggles to swim but if you want swimming goggles, I recommend the most cost-effective
+and practical solution: go buy a pair from your closest sports store.
 
 The basics of how these goggles work is described in the USPTO patent
 [20170203159A1](https://patents.google.com/patent/US20170203159A1/en)
