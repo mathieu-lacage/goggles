@@ -8,11 +8,12 @@ What is special about these goggles ?
 
 Here is a short comparison chart that illustrates alternatives
 
-|                |  Max depth |  Ear Equalization       | Eye equalization | Field of view | Optical deformations
-| Diving goggles |  None      |  Hands free (nose clip) | Not needed       | +++           | -
-| Normal goggles |  10m       |  Hands free (nose clip) | Impossible       | +++           | -
-| Fluid goggles  |  None      |  Hands free (nose clip) | Not needed       | +             | ---
-| Diving mask    |  None      |  BTV, Valsava, etc.     | Air from lungs   | +++           | -
+|                |  Max depth |  Ear Equalization       | Eye equalization | Field of view | Optical deformations |
+|----------------|------------|-------------------------|------------------|---------------|----------------------|
+| Diving goggles |  None      |  Hands free (nose clip) | Not needed       | +++           | -                    |
+| Normal goggles |  10m       |  Hands free (nose clip) | Impossible       | +++           | -                    |
+| Fluid goggles  |  None      |  Hands free (nose clip) | Not needed       | +             | ---                  |
+| Diving mask    |  None      |  BTV, Valsava, etc.     | Air from lungs   | +++           | -                    |
 
 
 # How they work
