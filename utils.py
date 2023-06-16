@@ -37,20 +37,6 @@ def ring(height, delta):
     return o
 
 
-def export(name, type, resolution, output=None):
-    if output is None:
-        import os
-        output = '%s-%s/%s.%s' % (type, resolution, name, type)
-        try:
-            os.mkdir('%s-%s' % (type, resolution))
-        except:
-            pass
-    else:
-        output = '%s.%s' % (output, type)
-    import subprocess
-    subprocess.check_output(['/usr/bin/openscad', '-o', output, '%s.scad' % name])
-
-
 def slice(args):
     if args.slice_a is not None:
         cut = solid.rotate([0, 0, args.slice_a])(solid.translate([-0, 0, -100])(solid.cube([200, 200, 200])))
