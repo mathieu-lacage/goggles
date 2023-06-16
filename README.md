@@ -94,7 +94,47 @@ $ ./goggles.py -r 400 -e
 
 The resulting STLs will be located in the stl-400 subdirectory and the lens.svg file next to your goggles.py file.
 
-## Print parts
+## Print The shell
+
+![Shell model viewed in OpenSCAD](/doc/assets/shell.png)
+
+I have printed the shell successfully both on the 
+[SoFAB](https://www.sofab.tv/)'s Formlab resin printer with both 
+[Draft](https://formlabs.com/materials/standard/#draft-resin) and 
+[Grey Pro](https://formlabs.com/materials/standard/#grey-pro-resin) resin.
+The quality difference between the two resins is not visible but I picked
+Grey Pro to avoid potential problems with the part durabilityy.
+
+I used the Formlab's slicer ([Preform](https://formlabs.com/fr/software/#preform)) 
+with its default "magic wand" tool for orientation and support.
+
+## Print the lens clip and assembly clip
+
+![Lens clip model viewed in OpenSCAD](/doc/assets/lens-clip.png)
+![Assembly clip model viewed in OpenSCAD](/doc/assets/back-clip.png)
+
+The lens clip, and the back clip can be printed without special care on 
+your FDM printer of choice. I recommend PETG for durability
+
+## Cut and groove the lens
+
+The starting point is a 6mm acrylic sheet that needs to be cut to produce
+
+
+The lens.svg file contains two paths which should be cut at different depths
+to produce a basic lens that will then be grooved to insert the lens clip
+for assembly.
+
+
+1. The inner path should be used as a guide to cut OUTSIDE of the ellipsis.
+   The depth should be 5.2mm.
+2. The outer path should be used as a guide to cut OUTSIDE of the ellipsis again.
+   The depth should match that of the acrylic sheet. Theoreticaly, 6mm but
+   I observed significant variability in the thickness of acrylic sheets 
+   (+/- 0.2mm) so, you will have to adjust until you can separate your part
+   from the sheet.
+
+
 
 #### The flex skirt
 
@@ -109,37 +149,6 @@ The resulting STLs will be located in the stl-400 subdirectory and the lens.svg 
      Formlabs datasheets. For some reason, I have observed wide variance in the
      dimensional and elastic stability of the parts produced here so, be ready
      to print more than once.
-
-#### The shell
-
-![Shell model viewed in OpenSCAD](/doc/assets/shell.png)
-
-I have printed the shell successfully both on the 
-[SoFAB](https://www.sofab.tv/)'s Formlab resin printer with both 
-[Draft](https://formlabs.com/materials/standard/#draft-resin) and 
-[Grey Pro](https://formlabs.com/materials/standard/#grey-pro-resin) resin.
-The quality difference between the two resins was not significant for 
-this part.
-
-I also printed a couple of versions with PETG and PLA filaments on
-a [Prusa i3 MK3S](https://www.prusa3d.com/product/original-prusa-i3-mk3s-kit-3/). 
-Functionally, the resulting parts are equivalent but they required extensive
-post-processing to obtain nice-looking surface finishes. If you go down this path,
-I recommend you to choose carefully the part orientation when you drop it in the 
-slicer so that the supports are not created on the side of the shell that will be
-in contact with the flex skirt (this will make it more likely your goggles do
-not let water in).
-
-![Shell model oriented correctly in Prusa Slicer](/doc/assets/shell-prusa.png)
-
-#### Other parts
-
-![Lens clip model viewed in OpenSCAD](/doc/assets/lens-clip.png)
-![Lens alignment tool viewed in OpenSCAD](/doc/assets/lens-alignment.png)
-![Back clip model viewed in OpenSCAD](/doc/assets/back-clip.png)
-
-The lens clip, the lens alignment tool, and, if you decide you need it, the back clip
-can be printed without special care on your printer of choice.
 
 ### Cut lenses
 
