@@ -28,25 +28,34 @@ def diopters_to_radius(diopters, material):
     return R1
 
 
-def myopia_correction(diopters, material, x_offset=0, y_offset=0):
-    if diopters is None:
-        return None
-    R1 = diopters_to_radius(diopters, material)
-    half_width = max(constants.ELLIPSIS_WIDTH + math.fabs(x_offset), constants.ELLIPSIS_HEIGHT + math.fabs(y_offset)) - constants.SKIRT_THICKNESS
-    delta = math.sqrt(R1**2-half_width**2)
-    o = solid.sphere(r=R1, segments=500)
-    o = solid.translate([x_offset, y_offset, delta])(o)
-    return o
-
-
-def half_circle(r, n):
-    path = [ggg.Point3(r*math.cos(t), r*math.sin(t), 0) for t in solid.utils.frange(9*math.pi/10, 11*math.pi/10, n, include_end=False)]
+def circle_patch(r, n):
+    path = [ggg.Point3(r*math.cos(t), r*math.sin(t), 0) for t in solid.utils.frange(19*math.pi/20, 21*math.pi/20, n, include_end=False)]
     return path
 
 
+def myopia_correction(diopters, material, x_offset=0, y_offset=0):
+    if diopters is None:
+        return None
+    r = diopters_to_radius(diopters, material)
+    c = circle_patch(r, 100)
+    o = ggg.extrude(c).around_z_partially(100, -math.pi/20, math.pi/20).mesh().solidify()
+    o = solid.translate([r, 0, 0])(o)
+    o = solid.rotate([0, -90, 0])(o)
+#    o = solid.debug(o)
+    half_width = max(constants.ELLIPSIS_WIDTH + math.fabs(x_offset), constants.ELLIPSIS_HEIGHT + math.fabs(y_offset)) - constants.SKIRT_THICKNESS
+    delta = r-math.sqrt(r**2-half_width**2)
+    o = solid.translate([x_offset, y_offset, -delta])(o)
+    return o
+#    half_width = max(constants.ELLIPSIS_WIDTH + math.fabs(x_offset), constants.ELLIPSIS_HEIGHT + math.fabs(y_offset)) - constants.SKIRT_THICKNESS
+#    delta = math.sqrt(R1**2-half_width**2)
+#    o = solid.sphere(r=R1, segments=100)
+#    o = solid.translate([x_offset, y_offset, delta])(o)
+#    return o
+
+
 def torus(r1, r2, n=constants.NSTEPS):
-    c1 = half_circle(r1, n)
-    c2 = half_circle(r2, n)
+    c1 = circle_patch(r1, n)
+    c2 = circle_patch(r2, n)
     o = ggg.extrude(list(reversed(c1))).along_open_path(c2).mesh().solidify()
     return o
 
@@ -86,6 +95,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-r', '--resolution', default=40, type=int)
     parser.add_argument('-e', '--export', action='store_true')
+    parser.add_argument('-o', '--output', default=None)
     parser.add_argument('--slice-x', default=None, type=float)
     parser.add_argument('--slice-y', default=None, type=float)
     parser.add_argument('--slice-z', default=None, type=float)
@@ -112,10 +122,11 @@ def main():
     if args.slice_a is not None or args.slice_x is not None or args.slice_y is not None or args.slice_z is not None:
         cut = utils.slice(args)
         lens = lens - cut
-    solid.scad_render_to_file(lens, 'lens-cnc.scad')
+    scad_filename = 'lens-cnc' if args.output is None else args.output
+    solid.scad_render_to_file(lens, '%s.scad' % scad_filename)
 
     if args.export:
-        utils.export('lens-cnc', 'stl', args.resolution)
+        utils.export(scad_filename, 'stl', args.resolution, args.output)
 
 
 if __name__ == '__main__':

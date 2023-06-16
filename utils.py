@@ -37,14 +37,18 @@ def ring(height, delta):
     return o
 
 
-def export(name, type, resolution):
+def export(name, type, resolution, output=None):
+    if output is None:
+        import os
+        output = '%s-%s/%s.%s' % (type, resolution, name, type)
+        try:
+            os.mkdir('%s-%s' % (type, resolution))
+        except:
+            pass
+    else:
+        output = '%s.%s' % (output, type)
     import subprocess
-    import os
-    try:
-        os.mkdir('%s-%s' % (type, resolution))
-    except:
-        pass
-    subprocess.check_output(['/usr/bin/openscad', '-o', '%s-%s/%s.%s' % (type, resolution, name, type), '%s.scad' % name])
+    subprocess.check_output(['/usr/bin/openscad', '-o', output, '%s.scad' % name])
 
 
 def slice(args):
