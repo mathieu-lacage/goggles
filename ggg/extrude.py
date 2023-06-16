@@ -1,4 +1,5 @@
 import euclid3
+import math
 
 from .point import Point3
 from .shapes import Shapes
@@ -9,6 +10,17 @@ __all__ = ['extrude']
 class Extrude:
     def __init__(self, shape):
         self._shape = shape
+
+    def _angle_tangents(self, angles):
+        return [Point3(math.cos(math.pi/2-alpha), math.sin(math.pi/2-alpha), 0) for alpha in angles]
+
+    def _rotation_tangents(self, n):
+        angles = [i * 2 * math.pi / n for i in range(n)]
+        return self._angle_tangents(angles)
+
+    def _partial_rotation_tangents(self, n, start, end):
+        angles = [start + i * (end - start) / n for i in range(n)]
+        return self._angle_tangents(angles)
 
     def _open_path_tangents(self, path):
         first = Point3(*(path[0] - (path[1] - path[0])))
@@ -76,13 +88,20 @@ class Extrude:
         transformed_shapes = list(self._transform_shapes(path, tangents, shapes))
         return Shapes(transformed_shapes, type=shape_type)
 
-    def linear(self, h):
-        p = [Point3(0, 0, 0), Point3(0, 0, h)]
+    def along_z(self, h, n=2):
+        assert n >= 2
+        p = [Point3(0, 0, i*h/(n-1)) for i in range(n)]
         return self.along_open_path(p)
 
-    def rotation(self, h):
-        assert False
-        return None
+    def around_z(self, n):
+        tangents = self._rotation_tangents(n)
+        path = [Point3(0, 0, 0) for i in range(n)]
+        return self.along_path(path, tangents, Shapes.ENDS_CONNECT)
+
+    def around_z_partially(self, n, start, end):
+        tangents = self._partial_rotation_tangents(n, start, end)
+        path = [Point3(0, 0, 0) for i in range(n)]
+        return self.along_path(path, tangents, Shapes.ENDS_CLOSE)
 
 
 def extrude(shape):
