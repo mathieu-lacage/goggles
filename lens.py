@@ -145,7 +145,6 @@ def main():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('-r', '--resolution', default=40, type=int)
-    parser.add_argument('-e', '--export', action='store_true')
     parser.add_argument('--slice-x', default=None, type=float)
     parser.add_argument('--slice-y', default=None, type=float)
     parser.add_argument('--slice-z', default=None, type=float)
@@ -166,10 +165,6 @@ def main():
     solid.scad_render_to_file(lc, 'lens-clip.scad')
     solid.scad_render_to_file(l, 'lens.scad')
     solid.scad_render_to_file(assembly, 'lens-assembly.scad')
-
-    if args.export:
-        utils.export('lens', 'stl', args.resolution)
-        utils.export('lens-clip', 'stl', args.resolution)
 
     generate_lens_svg()
 

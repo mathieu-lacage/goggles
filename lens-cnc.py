@@ -94,7 +94,6 @@ def main():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('-r', '--resolution', default=40, type=int)
-    parser.add_argument('-e', '--export', action='store_true')
     parser.add_argument('-o', '--output', default=None)
     parser.add_argument('--slice-x', default=None, type=float)
     parser.add_argument('--slice-y', default=None, type=float)
@@ -124,9 +123,6 @@ def main():
         lens = lens - cut
     scad_filename = 'lens-cnc' if args.output is None else args.output
     solid.scad_render_to_file(lens, '%s.scad' % scad_filename)
-
-    if args.export:
-        utils.export(scad_filename, 'stl', args.resolution, args.output)
 
 
 if __name__ == '__main__':

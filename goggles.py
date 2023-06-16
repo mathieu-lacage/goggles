@@ -499,7 +499,6 @@ def main():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('-r', '--resolution', default=40, type=int)
-    parser.add_argument('-e', '--export', action='store_true')
     parser.add_argument('--slice-x', default=None, type=float)
     parser.add_argument('--slice-y', default=None, type=float)
     parser.add_argument('--slice-z', default=None, type=float)
@@ -537,13 +536,6 @@ def main():
     solid.scad_render_to_file(top_mold, 'top-mold.scad')
     solid.scad_render_to_file(bottom_mold, 'bottom-mold.scad')
     solid.scad_render_to_file(mold, 'mold.scad')
-
-    if args.export:
-        utils.export('shell', 'stl', args.resolution)
-        utils.export('skirt', 'stl', args.resolution)
-        utils.export('top-mold', 'stl', args.resolution)
-        utils.export('bottom-mold', 'stl', args.resolution)
-        utils.export('back-clip', 'stl', args.resolution)
 
 
 main()
