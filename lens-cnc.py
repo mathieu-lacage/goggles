@@ -46,11 +46,6 @@ def myopia_correction(diopters, material, x_offset=0, y_offset=0):
     delta = r-math.sqrt(r**2-half_width**2)
     o = solid.translate([x_offset, y_offset, -delta])(o)
     return o
-#    half_width = max(constants.ELLIPSIS_WIDTH + math.fabs(x_offset), constants.ELLIPSIS_HEIGHT + math.fabs(y_offset)) - constants.SKIRT_THICKNESS
-#    delta = math.sqrt(R1**2-half_width**2)
-#    o = solid.sphere(r=R1, segments=100)
-#    o = solid.translate([x_offset, y_offset, delta])(o)
-#    return o
 
 
 def torus(r1, r2, n=constants.NSTEPS):
