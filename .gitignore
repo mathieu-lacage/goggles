@@ -132,3 +132,7 @@ dmypy.json
 stl-*
 *.swp
 *~
+*.stl
+*.svg
+formwash*/
+formcure*
