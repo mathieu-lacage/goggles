@@ -41,4 +41,4 @@ shell.scad back-clip.scad skirt.scad goggles.scad top-mold.scad bottom-mold.scad
 clean:
 	rm -f *.scad
 	rm -f *.stl
-	rm *~
+	rm -f *~
