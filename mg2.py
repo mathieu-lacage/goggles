@@ -22,8 +22,8 @@ def _rotate(alpha):
     return inner
 
 
-def _argmin(l, key=lambda i: i):
-    m = min(enumerate(l), key=lambda item: key(item[1]))
+def _argmin(items, key=lambda i: i):
+    m = min(enumerate(items), key=lambda item: key(item[1]))
     return m[0]
 
 
@@ -288,7 +288,7 @@ class CutTestCase(unittest.TestCase):
         for i in path[1:]:
             p.append(x=i[0], y=i[1])
         got = p.cut(x=cut[0], y=cut[1])
-        self._check(got=got, expected=[[Point(x=x, y=y) for x,y in path] for path in expected])
+        self._check(got=got, expected=[[Point(x=x, y=y) for x, y in path] for path in expected])
 
     def test_no_segment(self):
         self._test(
@@ -381,6 +381,6 @@ class CutTestCase(unittest.TestCase):
             [[(0, 0), (2, 0), (2, 4)], [(2, 4), (2.1, 4)]]
         )
 
+
 if __name__ == '__main__':
     unittest.main()
-
