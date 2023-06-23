@@ -137,7 +137,7 @@ def shell():
         top = max(2*constants.UNIT/3*(1-alpha**4), constants.SHELL_THICKNESS)
         tooth_width = constants.TOOTH_WIDTH*(1-alpha**4)
         epsilon = 0.1
-        
+
         p1 = mg2.Path(x=constants.SHELL_TOP_X+curve.width+constants.SHELL_THICKNESS-epsilon, y=curve.height)\
             .append(dx=tooth_width, y=-top/2)\
             .append(y=-top)\
@@ -187,7 +187,7 @@ def shell():
                     .append(dx=-(xalpha)*(delta_x+handle_width)*3/4, dy=-(yalpha)*delta_y)
                     .splinify())
         return utils.eu3(path.reversed_points)
-        
+
     path3 = [utils.ellipsis(constants.ELLIPSIS_WIDTH, constants.ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(math.pi-constants.BOTTOM_ATTACHMENT_WIDTH*2*math.pi, math.pi+constants.BOTTOM_ATTACHMENT_WIDTH*2*math.pi, BOTTOM_ATTACHMENT_RESOLUTION)]
     shapes3 = [bottom_attachment_profile(i, len(path3)) for i in range(len(path3))]
     bottom_attachment = ggg.extrude(shapes3).along_open_path(path3).mesh().solidify()
@@ -340,6 +340,7 @@ def alignment_pin(x, y, z):
     male = solid.translate([x, y, z])(male)
     female = solid.translate([x, y, z])(female)
     return Pin(male=male, female=female)
+
 
 def _split(split, is_bottom):
     epsilon = 0.001
