@@ -153,7 +153,7 @@ def main():
 
     constants.NSTEPS = args.resolution
     l = lens()
-    lc = lens_clip(constants.LENS_GROOVE_HEIGHT, 2, math.pi/50)
+    lc = lens_clip(constants.LENS_GROOVE_HEIGHT, 2, math.pi/100)
 
     assembly = l + lc
 
