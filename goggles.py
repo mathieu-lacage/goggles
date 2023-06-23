@@ -48,6 +48,12 @@ def fheight(alpha):
     return height
 
 
+def fheight_short(alpha):
+    d = distance(alpha)
+    height = constants.SHELL_MIN_HEIGHT+constants.SHELL_MAX_HEIGHT*d**25
+    return height
+
+
 def shell_curve(alpha):
     width = fwidth(alpha)
     height = fheight(alpha)
@@ -90,17 +96,47 @@ def rounded_square2(x, y, height, radius, adjust=False):
     return o
 
 
+def resample_polygon(polygon, k):
+    def lerp(p, q, t):
+        return Point3(
+            x=(1 - t) * p.x + t * q.x,
+            y=(1 - t) * p.y + t * q.y,
+            z=0
+        )
+
+    assert len(polygon) >= 2
+    edges = [(polygon[i], polygon[i+1]) for i in range(len(polygon)-1)]
+    arc_length = sum(abs(q-p) for p, q in edges) / k
+    result = [polygon[0]]
+    t = 0
+    for p, q in edges:
+        d_t = abs(p-q) / arc_length
+        while t + d_t >= len(result) < k:
+            v = lerp(p, q, (len(result) - t) / d_t)
+            result.append(v)
+        t += d_t
+    return result
+
+
+def shell_curve_cut(alpha):
+    LENGTH = 20
+    curve = shell_curve(alpha).splinify(n=LENGTH)
+    cuts = curve.cut(y=fheight_short(alpha))
+    curve = resample_polygon(cuts[0].points, LENGTH)
+    path = mg2.Path(path=curve)
+    return path
+
+
 def shell():
     TOP_ATTACHMENT_RESOLUTION = 40
     BOTTOM_ATTACHMENT_RESOLUTION = 40
 
     def profile(i, n):
         alpha = i/n
-        curve = shell_curve(alpha).splinify()
+        curve = shell_curve_cut(alpha)
 
         path = mg2.Path(path=curve)\
-            .translate(dx=constants.SHELL_TOP_X)\
-            .extend(path=shell_extension(0.75))
+            .translate(dx=constants.SHELL_TOP_X)
         return_path = path.copy().reverse()\
             .offset(constants.SHELL_THICKNESS, left=True)
         path.extend_arc(alpha=-math.pi, r=constants.SHELL_THICKNESS/2)\
@@ -119,7 +155,7 @@ def shell():
         else:
             shell_alpha = 1-constants.TOP_ATTACHMENT_WIDTH+2*constants.TOP_ATTACHMENT_WIDTH*attachment_alpha
             alpha = (0.5-attachment_alpha)/0.5
-        curve = shell_curve(shell_alpha).splinify()
+        curve = shell_curve_cut(shell_alpha)
         top = max(2*constants.UNIT/3*(1-alpha**4), constants.SHELL_THICKNESS)
         tooth_width = constants.TOOTH_WIDTH*(1-alpha**4)
         epsilon = 0.1
@@ -144,7 +180,7 @@ def shell():
     shapes2 = [top_attachment_profile(i, len(path2)) for i in range(len(path2))]
     top_attachment = ggg.extrude(shapes2).along_open_path(path2).mesh().solidify()
     top_hole = rounded_square(1.5*constants.SHELL_THICKNESS, 1.5*constants.SHELL_THICKNESS, 20, constants.SHELL_THICKNESS/2)
-    top_hole = solid.translate([constants.ELLIPSIS_WIDTH+shell_curve(0).width+constants.SHELL_TOP_X+constants.SHELL_THICKNESS+constants.TOOTH_WIDTH/2-0.2, 0, -10])(top_hole)
+    top_hole = solid.translate([constants.ELLIPSIS_WIDTH+shell_curve_cut(0).width+constants.SHELL_TOP_X+constants.SHELL_THICKNESS+constants.TOOTH_WIDTH/2-0.2, 0, -10])(top_hole)
     top_attachment = top_attachment - top_hole
     o = o + top_attachment
 
@@ -156,7 +192,7 @@ def shell():
             shell_alpha = 0.5+2*constants.BOTTOM_ATTACHMENT_WIDTH*(attachment_alpha-0.5)
         else:
             shell_alpha = 0.5-2*constants.BOTTOM_ATTACHMENT_WIDTH*(0.5-attachment_alpha)
-        curve = shell_curve(shell_alpha).splinify()
+        curve = shell_curve_cut(shell_alpha)
         handle_width = constants.SHELL_THICKNESS*4*distance(attachment_alpha)**2
         handle_height = BOTTOM_ATTACHMENT_HEIGHT
         xalpha = constants.XALPHA
@@ -179,7 +215,7 @@ def shell():
     bottom_attachment = ggg.extrude(shapes3).along_open_path(path3).mesh().solidify()
 
     bah = rounded_square(constants.SHELL_BOTTOM_HOLE_HEIGHT, constants.SHELL_BOTTOM_HOLE_WIDTH, 20, constants.SHELL_THICKNESS/2)
-    c = shell_curve(0.5)
+    c = shell_curve_cut(0.5)
     bah1 = solid.translate([-constants.ELLIPSIS_WIDTH-c.width-constants.SHELL_TOP_X-constants.SHELL_THICKNESS/2, 0, constants.SHELL_MAX_HEIGHT])(bah)
     bottom_attachment = bottom_attachment - bah1
     bah2 = solid.translate([-constants.ELLIPSIS_WIDTH-c.width-constants.SHELL_TOP_X-constants.SHELL_THICKNESS - 10, 0, c.height-BOTTOM_ATTACHMENT_HEIGHT-constants.SHELL_BOTTOM_HOLE_WIDTH/2])(
@@ -202,15 +238,17 @@ def shell():
 
     return o
 
-def shell_extension(delta=1):
+
+def shell_extension():
     zero = shell_curve(0)
     silicon_skirt_height = 0.5*constants.UNIT
     silicon_skirt_width = constants.SHELL_TOP_X+zero.width
     tmp = mg2.Path(x=0, y=0)\
-        .append(dy=silicon_skirt_height*delta)\
-        .append(dx=silicon_skirt_width*delta)\
+        .append(dy=silicon_skirt_height)\
+        .append(dx=silicon_skirt_width)\
         .splinify()
     return tmp
+
 
 def skirt_profile(i, n):
     alpha = i / n
@@ -514,10 +552,8 @@ def main():
     bc = back_clip()
     bottom_mold, top_mold = skirt_mold()
     #top_mold = solid.translate([0, 0, -0.3])(top_mold)
-    mold = bottom_mold + top_mold
 
-    output = l + sh + lc
-    #output = sh + l + lc
+    assembly = sh + sk
     if args.slice_a is not None or args.slice_x is not None or args.slice_y is not None or args.slice_z is not None:
         cut = utils.slice(args)
         lc = lc - cut
@@ -526,16 +562,14 @@ def main():
         l = l - cut
         top_mold = top_mold - cut
         bottom_mold = bottom_mold - cut
-        mold = mold - cut
-        output = output - cut
+        assembly = assembly - cut
 
-    solid.scad_render_to_file(output, 'goggles.scad')
+    solid.scad_render_to_file(assembly, 'goggles.scad')
     solid.scad_render_to_file(sh, 'shell.scad')
     solid.scad_render_to_file(sk, 'skirt.scad')
     solid.scad_render_to_file(bc, 'back-clip.scad')
     solid.scad_render_to_file(top_mold, 'top-mold.scad')
     solid.scad_render_to_file(bottom_mold, 'bottom-mold.scad')
-    solid.scad_render_to_file(mold, 'mold.scad')
 
 
 main()
