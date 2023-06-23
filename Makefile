@@ -1,5 +1,5 @@
 RELEASE_VERSION=$(shell date +%Y-%m-%d)
-SOURCE=lens.py lens-cnc.py goggles.py utils.py Makefile constants.py
+SOURCE=lens.py lens-cnc.py goggles.py utils.py Makefile constants.py mg2.py
 SCAD_TARGET=lens-clip.scad lens-og.scad lens-od.scad shell.scad top-mold.scad bottom-mold.scad back-clip.scad
 SVG_TARGET=lens.svg
 STL_TARGET=$(addsuffix .stl, $(basename $(SCAD_TARGET)))

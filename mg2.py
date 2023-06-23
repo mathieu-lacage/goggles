@@ -234,6 +234,23 @@ class Path:
         self._labels = {}
         return self
 
+    def resample(self, k):
+        assert len(self._p) >= 2
+        edges = [(self._p[i], self._p[i+1]) for i in range(len(self._p)-1)]
+        arc_length = sum(abs(q-p) for p, q in edges) / k
+        result = [self._p[0]]
+        t = 0
+        for p, q in edges:
+            d_t = abs(p-q) / arc_length
+            while t + d_t >= len(result) < k:
+                alpha = (len(result) - t) / d_t
+                v = (1-alpha) * p + alpha * q
+                result.append(v)
+            t += d_t
+        self._p = result
+        self._labels = {}
+        return self
+
     def update_origin(self):
         last = self._p[-1]
         self.translate(-last.x, -last.y)

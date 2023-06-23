@@ -96,33 +96,11 @@ def rounded_square2(x, y, height, radius, adjust=False):
     return o
 
 
-def resample_polygon(polygon, k):
-    def lerp(p, q, t):
-        return Point3(
-            x=(1 - t) * p.x + t * q.x,
-            y=(1 - t) * p.y + t * q.y,
-            z=0
-        )
-
-    assert len(polygon) >= 2
-    edges = [(polygon[i], polygon[i+1]) for i in range(len(polygon)-1)]
-    arc_length = sum(abs(q-p) for p, q in edges) / k
-    result = [polygon[0]]
-    t = 0
-    for p, q in edges:
-        d_t = abs(p-q) / arc_length
-        while t + d_t >= len(result) < k:
-            v = lerp(p, q, (len(result) - t) / d_t)
-            result.append(v)
-        t += d_t
-    return result
-
-
 def shell_curve_cut(alpha):
     LENGTH = 20
     curve = shell_curve(alpha).splinify(n=LENGTH)
     cuts = curve.cut(y=fheight_short(alpha))
-    curve = resample_polygon(cuts[0].points, LENGTH)
+    curve = cuts[0].resample(LENGTH)
     path = mg2.Path(path=curve)
     return path
 
