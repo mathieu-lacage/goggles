@@ -10,7 +10,7 @@ Here is a short comparison chart that illustrates alternatives
 
 |                |  Max depth |  Ear Equalization       | Eye equalization | Field of view | Optical deformations |
 |----------------|------------|-------------------------|------------------|---------------|----------------------|
-| Diving goggles |  None      |  Hands free (nose clip) | Not needed       | +++           | -                    |
+| Diving goggles |  None      |  Hands free (nose clip) | Not needed       | ++            | -                    |
 | Normal goggles |  10m       |  Hands free (nose clip) | Impossible       | +++           | -                    |
 | Fluid goggles  |  None      |  Hands free (nose clip) | Not needed       | +             | ---                  |
 | Diving mask    |  None      |  BTV, Valsava, etc.     | Air from lungs   | +++           | -                    |
@@ -103,7 +103,7 @@ I have printed the shell successfully both on the
 [Draft](https://formlabs.com/materials/standard/#draft-resin) and 
 [Grey Pro](https://formlabs.com/materials/standard/#grey-pro-resin) resin.
 The quality difference between the two resins is not visible but I picked
-Grey Pro to avoid potential problems with the part durabilityy.
+Grey Pro to avoid potential problems with part durabilityy.
 
 I used the Formlab's slicer ([Preform](https://formlabs.com/fr/software/#preform)) 
 with its default "magic wand" tool for orientation and support.

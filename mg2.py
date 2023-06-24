@@ -239,12 +239,7 @@ class Path:
             t += d_t
         self._p = result
         return self
-
-    def update_origin(self):
-        last = self._p[-1]
-        self.translate(-last.x, -last.y)
-        return self
-
+    
     def translate(self, dx=0, dy=0):
         self._p = _translate(dx, dy)(self._p)
         return self
