@@ -25,11 +25,6 @@ def argmin(items, key):
     return m[0]
 
 
-def ellipsis_perpendicular(a, b, t):
-    p = utils.ellipsis(a, b, t)
-    return euclid3.Point3(p.x/a**2, p.y/b**2)
-
-
 def distance(alpha, threshold=0.5):
     d = alpha/threshold if alpha < threshold else (1-alpha)/(1-threshold)
     d = 1-(1-d)**2
