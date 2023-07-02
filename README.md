@@ -4,7 +4,6 @@ What is special about these goggles ?
 
 1. They are a practical way to freedive
 2. You can make them yourself
-3. You can make corrective lenses to match your eyesight
 
 Here is a short comparison chart that illustrates alternatives
 
@@ -33,6 +32,10 @@ for sale since 2020, this project documents how I made a pair for myself using
 hardware from my local FabLab, [SoFAB](https://www.sofab.tv/). Even though the principles
 of operation are similar, the design is fairly different, to adapt to the production
 tools that were available to me and potentially other makers.
+
+# What the result looks like
+
+![An assembled prototype](/doc/assets/prototype.png)
 
 # How to make one yourself
 
@@ -70,14 +73,6 @@ tools that were available to me and potentially other makers.
      [Replacement bands](https://malmsten.com/en/products/p/swim-goggles/swedish-goggles/swedish-goggles-spare-part-kit/2168/2357/1750001) 
      can often be bought separately.
 
-6. For the lens correction:
-   - A CNC if you can afford it for precision. I used a [Roland MDX-50](https://www.rolanddga.com/products/3d/mdx-50-benchtop-cnc-mill).
-     Alternatively, if your correction prescription is limited to small-scale myopia, great care and 
-     patience will replace the CNC if you are willing to live with
-     imperfect corrective lenses. 
-   - Sand paper, for wet use, grit sizes 150, 180, 240, 320, 400, 600, 800, 1000, 2000, 2500, 3000, 4000, 5000
-   - Polishing paste. I recommend a car headlight polishing kit as they are cheap, and are commonly available.
-
 ## Get the models
 
 It is is easy to [download](https://github.com/mathieu-lacage/goggles/releases/download/v0.1/goggles-0.1.zip) 
@@ -89,16 +84,16 @@ It is also possible to rebuild these models from the source Python code after yo
 ```
 $ sudo dnf install -y openscad
 $ pip install SolidPython
-$ ./goggles.py -r 400 -e
+$ make release
 ```
 
-The resulting STLs will be located in the stl-400 subdirectory and the lens.svg file next to your goggles.py file.
+The resulting files will be located in the release-XXXX-XX-XX subdirectory.
 
 ## Print The shell
 
 ![Shell model viewed in OpenSCAD](/doc/assets/shell.png)
 
-I have printed the shell successfully both on the 
+I have printed the shell successfully on the 
 [SoFAB](https://www.sofab.tv/)'s Formlab resin printer with both 
 [Draft](https://formlabs.com/materials/standard/#draft-resin) and 
 [Grey Pro](https://formlabs.com/materials/standard/#grey-pro-resin) resin.
@@ -114,11 +109,25 @@ with its default "magic wand" tool for orientation and support.
 ![Assembly clip model viewed in OpenSCAD](/doc/assets/back-clip.png)
 
 The lens clip, and the back clip can be printed without special care on 
-your FDM printer of choice. I recommend PETG for durability
+your FDM printer of choice. I recommend PETG for durability.
 
 ## Cut and groove the lens
 
-The starting point is a 6mm acrylic sheet that needs to be cut to produce
+The starting point is a 5mm acrylic sheet that needs to be cut with a router
+to produce
+
+
+The `lens.svg` included in the release contains paths that can be loaded into an Origin
+router and then used to cut acrylic sheets:
+
+1. Cut inside the grey area, at the depth specified on the svg
+2. Cut outsitde the grey area, at the depth of the acrylic sheet thickness minus a
+   small tolerance (say, 3-0.2=2.8mm)
+3. Separate the cut parts from the sheet by gently pushing them to break the 0.2mm
+   connectors
+4. Use a knife and sanding paper to clean gently the sides of the parts
+
+
 
 
 The lens.svg file contains two paths which should be cut at different depths
@@ -150,8 +159,6 @@ for assembly.
      dimensional and elastic stability of the parts produced here so, be ready
      to print more than once.
 
-### Cut lenses
-
 ![Lens model viewed in OpenSCAD](/doc/assets/lens.png)
 
 The lens is made out of Acrylic (AKA PMMA, Plexiglas). I could program my Lab's CNC
@@ -160,16 +167,6 @@ that would be a bit complicated so, instead, I chose to make these lenses out of
 parts cut from sheets of 3mm acrylic, that are later glued together.
 
 ![Lens top and bottom viewed in OpenSCAD](/doc/assets/lens-top-bottom.png)
-
-The `lens.svg` included in the release contains paths that can be loaded into an Origin
-router and then used to cut acrylic sheets:
-
-1. Cut inside the grey area, at the depth specified on the svg
-2. Cut outsitde the grey area, at the depth of the acrylic sheet thickness minus a
-   small tolerance (say, 3-0.2=2.8mm)
-3. Separate the cut parts from the sheet by gently pushing them to break the 0.2mm
-   connectors
-4. Use a knife and sanding paper to clean gently the sides of the parts
 
 ### Assembly
 
