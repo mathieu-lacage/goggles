@@ -37,6 +37,12 @@ tools that were available to me and potentially other makers.
 
 ![An assembled prototype](/doc/assets/prototype.png)
 
+# Other builds
+
+If, by chance, you decide to make your own based on these instructions, please drop
+me a note to let me know how it worked and what you had to change to have a working
+pair of goggles.
+
 # How to make one yourself
 
 ## What you need
@@ -47,7 +53,7 @@ tools that were available to me and potentially other makers.
    - 12 5x20 threaded screws to hold together the aluminium overmold
    - 10mm thick aluminium plates for the overmold. I bought 2 10x100x500 plates from [Blockenstock](https://www.blockenstock.fr/)
    - Something to cut 10mm tick aluminium plates. I used the services from [Decouplaser](https://www.decouplaser.fr/), a local metal shop
-   - A drill press with drill bits (diameter 6) for aluminium.
+   - A drill press with drill bits (diameter 5) for aluminium.
    - Threading bits for aluminium. Kindly provided by a maker, Guy Mausy.
    - A plastic  injection machine. I used a [Holipress](https://holimaker.fr/holipress/) from [Holimaker](https://holimaker.fr/)
    - TPU Plastic pellets. I used [SEBS 90A](https://boutique.3dadvance.fr/fablab/1199-granules-de-sebs-shore-90a-holimaker), the recommended flex pellets from the machine builder.
@@ -111,73 +117,95 @@ with its default "magic wand" tool for orientation and support.
 The lens clip, and the back clip can be printed without special care on 
 your FDM printer of choice. I recommend PETG for durability.
 
-## Cut and groove the lens
+## Cut the lens
 
-The starting point is a 5mm acrylic sheet that needs to be cut with a router
-to produce
-
+The starting point is a 5mm acrylic sheet that needs to be cut to produce
+an ellipsoid of the right size with the right profile: 
+![](doc/assets/lens.png)
 
 The `lens.svg` included in the release contains paths that can be loaded into an Origin
-router and then used to cut acrylic sheets:
+router and then used to cut acrylic sheets with a 3mm straight bit:
 
-1. Cut inside the grey area, at the depth specified on the svg
-2. Cut outsitde the grey area, at the depth of the acrylic sheet thickness minus a
-   small tolerance (say, 3-0.2=2.8mm)
-3. Separate the cut parts from the sheet by gently pushing them to break the 0.2mm
-   connectors
-4. Use a knife and sanding paper to clean gently the sides of the parts
+1. Cut along the exterior of the inner path to 4.3mm
+2. Cut along the exterior of the outer path to 5mm.
+3. Use a knife and sanding paper to clean gently the sides of the lens
 
+Beware of the thickness variability of acrylic sheets: in practice,
+it seems significant (+/- 0.2mm) for the stock I had access to 
+so you might need to adjust the depth of the second cut.
 
+## Groove the lens
 
+I considered buying a cheap lens groover that can be found on aliexpress
+for less than 60EUR but I ended up making one with a dremel and a couple of wood
+planks. I used spare oak planks I had around to support the dremel horizontally
+with plywood for the front face:
 
-The lens.svg file contains two paths which should be cut at different depths
-to produce a basic lens that will then be grooved to insert the lens clip
-for assembly.
+![Custom lens groover](/doc/assets/groover.png)
 
+The front face has a couple of extra plywood pieces to be able to control the
+depth of the groove:
 
-1. The inner path should be used as a guide to cut OUTSIDE of the ellipsis.
-   The depth should be 5.2mm.
-2. The outer path should be used as a guide to cut OUTSIDE of the ellipsis again.
-   The depth should match that of the acrylic sheet. Theoreticaly, 6mm but
-   I observed significant variability in the thickness of acrylic sheets 
-   (+/- 0.2mm) so, you will have to adjust until you can separate your part
-   from the sheet.
+![Front lens groover](/doc/assets/groover-front.png)
 
+Finally, I bought a lens holder to be able to keep my fingers away from the
+dremel rotating bit while rotating the lens itself with the holder:
 
+![Lens holder](/doc/assets/lens-holder.png)
 
-#### The flex skirt
+The above setup allows me to cut reliably grooves of the right depth (1mm)
+located at the right distance (1mm) from the lens edge. 
 
-![Skirt model viewed in OpenSCAD](/doc/assets/skirt.png)
+## Print the skirt mold
 
-   - Make sure you have the latest version of the [Formlab slicing software]()
-   - import the `skirt.stl` file, click on the MAGIC button to generate supports,
-     slice the result, and upload the model to your printer
-   - great care should be taken to remove supports from the print before wash
-     and curing because the print is very fragile at this step.
-   - I recommend curing longer (5 to 10 minutes) than required by the 
-     Formlabs datasheets. For some reason, I have observed wide variance in the
-     dimensional and elastic stability of the parts produced here so, be ready
-     to print more than once.
+![Two-part skirt mold](/doc/assets/skirt-mold.png)
 
-![Lens model viewed in OpenSCAD](/doc/assets/lens.png)
+The skirt mold is a two-part mold that should print easily with the magic
+wand default settings of PreForm. Again, I used Grey Pro resin which worked
+well so far.
 
-The lens is made out of Acrylic (AKA PMMA, Plexiglas). I could program my Lab's CNC
-to use its 4th rotating axis to mill the sides of a single sheet of 6mm acrylic but 
-that would be a bit complicated so, instead, I chose to make these lenses out of two
-parts cut from sheets of 3mm acrylic, that are later glued together.
+![Two-part skirt mold](/doc/assets/mold.png)
 
-![Lens top and bottom viewed in OpenSCAD](/doc/assets/lens-top-bottom.png)
+## Make an overmold
 
-### Assembly
+The skirt mold you printed with your resin printer will work exactly once
+and die a noisy death on your first plastic injection. If you want to inject
+at least two skirts without printing twice the mold, and if you
+want to make sure that the two-part mold does not open during injection, 
+I recommend you make or buy an overmold of the right size. I made mine
+out of 10mm thick aluminium sheets, as recommended by a local maker.
 
-### Making corrective lenses
+The dxfs for the 6 parts can be found in the release directory. I got them
+cut by a local metal shop, [Decouplaser](https://www.decouplaser.fr/) and my local
+mold expert kindly drilled and threaded the missing holes for me. The result
+might be a bit overkill but it worked for me.
 
-## Other builds
+![Overkill Overmold](/doc/assets/overmold.png)
 
-If, by chance, you decide to make your own based on these instructions, please drop
-me a note to let me know how it worked and what you had to change to have a working
-pair of goggles.
+## Inject skirts
 
-## How to modify the design
+After the overmold is assembled, the skirt mold should fit easily. 
+I needed to sand the mold external faces to make them fit tightly within
+the overmold. 
 
-## History
+![Mold in Overmold](/doc/assets/mold+overmold.png)
+
+After injecting a couple of skirts, I noted the following:
+
+ - Make sure that the screws of the overmold are very tight to ensure
+   proper injection without flash.
+
+ - After a couple of injections, the mold will get warmer. It will 
+   expand and will be more difficult to insert and remove from the overmold.
+
+ - hold time for the machine and pellets I used is at 10-20s. It seems
+   that the hold time depends on the temperature of the mold itself: decrease
+   hold time when temperature increases to avoid extra pressure at
+   the point where material is injected in the mold.
+
+The skirts should need minimal post-processing: if the overmold is not
+sufficiently tight, you might need to remove some flash.
+
+## Assembly
+
+# History
