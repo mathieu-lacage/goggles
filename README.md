@@ -10,7 +10,7 @@ Here is a short comparison chart that illustrates alternatives
 
 |                |  Max depth |  Ear Equalization       | Eye equalization | Field of view | Optical deformations |
 |----------------|------------|-------------------------|------------------|---------------|----------------------|
-| Diving goggles |  None      |  Hands free (nose clip) | Not needed       | ++            | -                    |
+| Diving goggles |  Unknown   |  Hands free (nose clip) | Not needed       | ++            | -                    |
 | Normal goggles |  10m       |  Hands free (nose clip) | Impossible       | +++           | -                    |
 | Fluid goggles  |  None      |  Hands free (nose clip) | Not needed       | +             | ---                  |
 | Diving mask    |  None      |  BTV, Valsava, etc.     | Air from lungs   | +++           | -                    |
@@ -54,7 +54,7 @@ tools that were available to me and potentially other makers.
    - Resin for rigid parts. I used [Grey Pro](https://formlabs.com/fr/boutique/materials/grey-pro-resin/).
 
 3. For the lenses:
-   - Transparent Acrylic/PMMA/Plexiglas sheets (6mm thick).
+   - Transparent Acrylic/PMMA/Plexiglas sheets (5mm thick).
    - A router. I used an [Origin](https://www.shapertools.com/en-de/origin-overview). A manual router should work too 
      but it might be challenging to make accurate guides for the lens shapes.
    - A grover. I made one with sheets of wood, screws, and a dremel.
