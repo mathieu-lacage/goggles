@@ -66,7 +66,7 @@ pair of goggles.
    - Transparent Acrylic/PMMA/Plexiglas sheets (5mm thick).
    - A router. I used an [Origin](https://www.shapertools.com/en-de/origin-overview). A manual router should work too 
      but it might be challenging to make accurate guides for the lens shapes.
-   - A grover. I made one with sheets of wood, screws, and a dremel.
+   - A groover. I made one with sheets of wood, screws, and a dremel.
 
 4. For the lens clip assembly:
    - A simple extrusion 3D printer. I used a [Prusa MK3](https://www.prusa3d.com/product/original-prusa-i3-mk3s-3d-printer-3/)
@@ -121,6 +121,7 @@ your FDM printer of choice. I recommend PETG for durability.
 
 The starting point is a 5mm acrylic sheet that needs to be cut to produce
 an ellipsoid of the right size with the right profile: 
+
 ![](doc/assets/lens.png)
 
 The `lens.svg` included in the release contains paths that can be loaded into an Origin
@@ -205,7 +206,3 @@ After injecting a couple of skirts, I noted the following:
 
 The skirts should need minimal post-processing: if the overmold is not
 sufficiently tight, you might need to remove some flash.
-
-## Assembly
-
-# History
