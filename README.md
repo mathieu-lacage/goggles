@@ -75,8 +75,8 @@ tools that were available to me and potentially other makers.
 
 ## Get the models
 
-It is is easy to [download](https://github.com/mathieu-lacage/goggles/releases/download/v0.1/goggles-0.1.zip) 
-all the STLs and SVGs from the project release page.
+It is is easy to download all the [STLs, SVGs, and DXFs](https://github.com/mathieu-lacage/goggles/tree/main/v1)
+from this repository.
 
 It is also possible to rebuild these models from the source Python code after you install 
 [OpenSCAD](https://openscad.org/) and [SolidPython](https://github.com/SolidCode/SolidPython/):
@@ -87,7 +87,7 @@ $ pip install SolidPython
 $ make release
 ```
 
-The resulting files will be located in the release-XXXX-XX-XX subdirectory.
+The resulting files will be located in the goggles-XXXX-XX-XX subdirectory.
 
 ## Print The shell
 
