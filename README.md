@@ -37,6 +37,14 @@ tools that were available to me and potentially other makers.
 
 ![An assembled prototype](/doc/assets/prototype.png)
 
+# Credits
+
+A lot of help was provided by Xavier, the [SoFAB](https://www.sofab.tv/) Fab Manager, as well
+as a couple of experienced makers: Guy who helped me make the overmold and provided
+invaluable advice on mold design and plastic injection, Pascal who shared his experience
+with plastic injection, and Laurent who criticized the design over the course of the 18 months
+it took me to bring this project from idea to prototype.
+
 # Other builds
 
 If, by chance, you decide to make your own based on these instructions, please drop
