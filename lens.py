@@ -47,7 +47,7 @@ def lens():
         .append(dx=-constants.LENS_GROOVE_DEPTH)\
         .append(dy=constants.LENS_GROOVE_HEIGHT)
 
-    path = utils.ellipsis_path()
+    path = utils.ellipsis_path_delta()
     o = ggg.extrude(list(shape.points)).along_closed_path(path).mesh().solidify()
     epsilon = 0
     tmp = utils.ring(constants.LENS_HEIGHT+epsilon*2, -(constants.SKIRT_THICKNESS+constants.LENS_GROOVE_DEPTH+PADDING)+0.3)
@@ -59,13 +59,12 @@ def lens():
     return o
 
 
-def generate_lens_svg():
+def generate_lens_svg(filename, offset):
     import cairo
-    kerf = 0.1
-    laser = 0.01
+    width = 0.01
     spacing = constants.ELLIPSIS_WIDTH/3
 
-    def half_lens(context, delta1, delta2, depth):
+    def half_lens(context, delta1, delta2):
         context.save()
         context.translate(-constants.ELLIPSIS_WIDTH, -constants.ELLIPSIS_HEIGHT)
         context.arc(0, 0, 0.5, 0, 2*math.pi)
@@ -79,7 +78,7 @@ def generate_lens_svg():
         context.arc(0, 0, 1, 0, 2*math.pi)
         context.restore()
         context.set_source_rgba(1, 0, 0, 1)
-        context.set_line_width(laser)
+        context.set_line_width(width)
         context.stroke()
         context.restore()
 
@@ -89,18 +88,11 @@ def generate_lens_svg():
         context.arc(0, 0, 1, 0, 2*math.pi)
         context.restore()
         context.set_source_rgba(1, 0, 0, 1)
-        context.set_line_width(laser)
+        context.set_line_width(width)
         context.stroke()
         context.restore()
 
-        context.save()
-        context.translate(-constants.ELLIPSIS_WIDTH/2, 0)
-        context.set_source_rgb(0, 0, 1)
-        context.set_font_size(2)
-        context.show_text("depth cut=%.02fmm" % depth)
-        context.restore()
-
-    with cairo.SVGSurface("lens.svg", constants.ELLIPSIS_WIDTH*6, constants.ELLIPSIS_HEIGHT*6) as surface:
+    with cairo.SVGSurface(filename, constants.ELLIPSIS_WIDTH*6, constants.ELLIPSIS_HEIGHT*6) as surface:
         surface.set_document_unit(cairo.SVGUnit.MM)
         context = cairo.Context(surface)
 
@@ -108,9 +100,8 @@ def generate_lens_svg():
         context.translate(constants.ELLIPSIS_WIDTH*3+spacing*2, constants.ELLIPSIS_HEIGHT+spacing)
         half_lens(
             context,
-            -constants.SKIRT_THICKNESS+constants.LENS_BOTTOM_RING_WIDTH,
-            -constants.SKIRT_THICKNESS,
-            constants.LENS_HEIGHT-constants.LENS_BOTTOM_RING_HEIGHT
+            -constants.SKIRT_THICKNESS+constants.LENS_BOTTOM_RING_WIDTH+offset,
+            -constants.SKIRT_THICKNESS+offset,
         )
         context.restore()
 
@@ -125,7 +116,7 @@ def lens_clip(height, width, alpha):
         .append(dy=constants.LENS_TOP_HEIGHT)\
         .append(dx=-constants.LENS_GROOVE_DEPTH)\
         .append(dy=constants.LENS_GROOVE_HEIGHT)
-    path = utils.ellipsis_path()
+    path = utils.ellipsis_path_delta()
     a = ggg.extrude(list(shape.reversed_points)).along_closed_path(path).mesh().solidify()
     a = solid.translate([0, 0, constants.LENS_TOP_HEIGHT])(a)
 
@@ -166,7 +157,12 @@ def main():
     solid.scad_render_to_file(l, 'lens.scad')
     solid.scad_render_to_file(assembly, 'lens-assembly.scad')
 
-    generate_lens_svg()
+    generate_lens_svg('lens.svg', constants.SKIRT_THICKNESS-constants.SKIRT_SQUASHED_THICKNESS)
+
+
+#def main():
+#    for o in [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]:
+#        generate_lens_svg('lens-%f.svg' % o, o)
 
 
 if __name__ == '__main__':

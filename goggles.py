@@ -72,6 +72,18 @@ def rounded_square(x, y, height, radius, adjust=False):
     return o
 
 
+def top_hole():
+    r1 = constants.SHELL_THICKNESS  # 0.8
+    r2 = r1  # 3*r1
+    h = 9
+    shapes = [
+        utils.ellipsis_path(r1, r1),
+        utils.ellipsis_path(r1, r2),
+    ]
+    o = ggg.extrude(shapes).along_z(h).mesh().solidify()
+    return o
+
+
 def rounded_square2(x, y, height, radius, adjust=False):
     if adjust:
         x = x - 2*radius
@@ -144,7 +156,7 @@ def shell():
             .append(dx=curve.width-epsilon)
         return utils.eu3(p1.reversed_points)
 
-    path1 = utils.ellipsis_path()
+    path1 = utils.ellipsis_path_delta()
     shapes1 = [profile(i, len(path1)) for i in range(len(path1))]
     o = ggg.extrude(shapes1).along_closed_path(path1).mesh().solidify()
 #    o = solid.debug(o)
@@ -152,9 +164,9 @@ def shell():
     path2 = [utils.ellipsis(constants.ELLIPSIS_WIDTH, constants.ELLIPSIS_HEIGHT, t) for t in solid.utils.frange(-constants.TOP_ATTACHMENT_WIDTH*2*math.pi, constants.TOP_ATTACHMENT_WIDTH*2*math.pi, TOP_ATTACHMENT_RESOLUTION, include_end=True)]
     shapes2 = [top_attachment_profile(i, len(path2)) for i in range(len(path2))]
     top_attachment = ggg.extrude(shapes2).along_open_path(path2).mesh().solidify()
-    top_hole = rounded_square(1.5*constants.SHELL_THICKNESS, 1.5*constants.SHELL_THICKNESS, 20, constants.SHELL_THICKNESS/2)
-    top_hole = solid.translate([constants.ELLIPSIS_WIDTH+shell_curve_cut(0).width+constants.SHELL_TOP_X+constants.SHELL_THICKNESS+constants.TOOTH_WIDTH/2-0.2, 0, -10])(top_hole)
-    top_attachment = top_attachment - top_hole
+    th = top_hole()
+    th = solid.translate([constants.ELLIPSIS_WIDTH+shell_curve_cut(0).width+constants.SHELL_TOP_X+constants.SHELL_THICKNESS+constants.TOOTH_WIDTH/2-0.2, 0, -6])(th)
+    top_attachment = top_attachment - th
     o = o + top_attachment
 
     BOTTOM_ATTACHMENT_HEIGHT = 2
@@ -246,7 +258,7 @@ BoundingBox = collections.namedtuple('BoundingBox', ['xmin', 'xmax', 'ymin', 'ym
 
 
 def skirt_bounding_box():
-    path = utils.ellipsis_path()
+    path = utils.ellipsis_path_delta()
     shapes = [utils.eu3(skirt_profile(i, constants.NSTEPS)) for i in range(len(path))]
     transformed = transform.to_path(shapes, path, True)
 
@@ -261,7 +273,7 @@ def skirt_bounding_box():
 
 
 def skirt():
-    path = utils.ellipsis_path()
+    path = utils.ellipsis_path_delta()
     shapes = [utils.eu3(skirt_profile(i, constants.NSTEPS)) for i in range(len(path))]
     o = ggg.extrude(shapes).along_closed_path(path).mesh().solidify()
     o = solid.mirror([0, 1, 0])(o)
@@ -373,7 +385,7 @@ def _split(split, is_bottom):
 
 
 def skirt_mold():
-    path = utils.ellipsis_path()
+    path = utils.ellipsis_path_delta()
     shapes = [skirt_profile(i, constants.NSTEPS) for i in range(len(path))]
     top_shapes = []
     bottom_shapes = []
@@ -424,7 +436,7 @@ MOLD_OVERLAP = 2
 
 
 def bottom_mold(bottom_shapes, max_skirt_y):
-    path = utils.ellipsis_path()
+    path = utils.ellipsis_path_delta()
 
     epsilon = 0
     output = []
@@ -478,7 +490,7 @@ def top_mold(top_shapes):
         shape.append(x=shape.points[0].x)
         output.append(utils.eu3(shape.reversed_points))
 
-    path = utils.ellipsis_path()
+    path = utils.ellipsis_path_delta()
     shapes = ggg.extrude(output).along_closed_path(path)
 
     o = shapes.mesh().solidify()

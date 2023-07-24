@@ -17,9 +17,13 @@ def ellipsis(a, b, t):
     return euclid3.Point3(a*math.cos(t), b*math.sin(t), 0)
 
 
-def ellipsis_path(delta=0):
-    path = [ellipsis(constants.ELLIPSIS_WIDTH+delta, constants.ELLIPSIS_HEIGHT+delta, t) for t in solid.utils.frange(0, 2*math.pi, constants.NSTEPS, include_end=False)]
+def ellipsis_path(a, b):
+    path = [ellipsis(a, b, t) for t in solid.utils.frange(0, 2*math.pi, constants.NSTEPS, include_end=False)]
     return path
+
+
+def ellipsis_path_delta(delta=0):
+    return ellipsis_path(a=constants.ELLIPSIS_WIDTH+delta, b=constants.ELLIPSIS_HEIGHT+delta)
 
 
 def ring(height, delta):

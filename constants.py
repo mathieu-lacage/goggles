@@ -35,10 +35,10 @@ SKIRT_THICKNESS = 1
 # compressed by the lens. Increase if the material you use
 # allows it (it is still possible to assemble the body, skirt, 
 # lens, and clip) and if you want to increase the probability
-# of having a waterproof skirt. When I made this value
-# smaller than SKIRT_THICKNESS, I have never been able to assemble
-# the skirt with the other pieces.
-SKIRT_SQUASHED_THICKNESS = SKIRT_THICKNESS
+# of having a waterproof skirt. 
+# I have experimentally determined that, for the material I 
+# use, 20% compression is good.
+SKIRT_SQUASHED_THICKNESS = SKIRT_THICKNESS * 0.8
 SKIRT_RING_PADDING = 0
 
 TOOTH_WIDTH = 2.5*UNIT/4
