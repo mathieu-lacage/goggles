@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import math
 
 import solid
@@ -164,4 +165,24 @@ def shell(top_hole):
     return o
 
 
+def main():
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-r', '--resolution', default=40, type=int)
+    parser.add_argument('--slice-x', default=None, type=float)
+    parser.add_argument('--slice-y', default=None, type=float)
+    parser.add_argument('--slice-z', default=None, type=float)
+    parser.add_argument('--slice-a', default=None, type=float)
+    args = parser.parse_args()
 
+    constants.NSTEPS = args.resolution
+    sh = shell(top_hole1)
+
+    if args.slice_a is not None or args.slice_x is not None or args.slice_y is not None or args.slice_z is not None:
+        cut = utils.slice(args)
+        sh = sh - cut
+
+    solid.scad_render_to_file(sh, 'shell.scad')
+
+
+main()
