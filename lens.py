@@ -106,7 +106,7 @@ def generate_lens_svg(filename, offset):
         context.restore()
 
 
-def lens_clip(height, width, alpha):
+def lens_clip(height, width, offset, alpha):
     deltay = constants.LENS_GROOVE_HEIGHT+constants.LENS_TOP_HEIGHT
     deltax = constants.SHELL_MIN_WIDTH+constants.SKIRT_THICKNESS
     shape = mg2.Path(x=constants.SHELL_MIN_WIDTH, y=0)\
@@ -116,7 +116,7 @@ def lens_clip(height, width, alpha):
         .append(dy=constants.LENS_TOP_HEIGHT)\
         .append(dx=-constants.LENS_GROOVE_DEPTH)\
         .append(dy=constants.LENS_GROOVE_HEIGHT)
-    path = utils.ellipsis_path_delta()
+    path = utils.ellipsis_path_delta(offset)
     a = ggg.extrude(list(shape.reversed_points)).along_closed_path(path).mesh().solidify()
     a = solid.translate([0, 0, constants.LENS_TOP_HEIGHT])(a)
 
@@ -144,7 +144,7 @@ def main():
 
     constants.NSTEPS = args.resolution
     l = lens()
-    lc = lens_clip(constants.LENS_GROOVE_HEIGHT, 2, math.pi/100)
+    lc = lens_clip(constants.LENS_GROOVE_HEIGHT, 2, constants.SKIRT_THICKNESS-constants.SKIRT_SQUASHED_THICKNESS, math.pi/10)
 
     assembly = l + lc
 
