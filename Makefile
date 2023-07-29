@@ -25,6 +25,8 @@ goggles-$(RELEASE_VERSION): $(RELEASE_TARGET)
 
 lens-clip.scad lens.svg: $(SOURCE)
 	./lens.py -r 40
+back-clip.scad: $(SOURCE)
+	./back-clip.py -r 40
 lens-og.scad: $(SOURCE)
 	./lens-cnc.py -o lens-og --material=pmma --myopia-diopters 2.1
 #	./lens-cnc.py -o lens-og --material=pmma --myopia-diopters 2 --astigmatism-diopters 1.5 --astigmatism-angle=5
@@ -32,7 +34,7 @@ lens-od.scad: $(SOURCE)
 	./lens-cnc.py -o lens-od --material=pmma --myopia-diopters 2.6
 #	./lens-cnc.py -o lens-og --material=pmma --myopia-diopters 2 --astigmatism-diopters 1.5 --astigmatism-angle=5
 
-shell.scad back-clip.scad skirt.scad goggles.scad top-mold.scad bottom-mold.scad: $(SOURCE)
+shell.scad skirt.scad goggles.scad top-mold.scad bottom-mold.scad: $(SOURCE)
 	./goggles.py -r $(RESOLUTION)
 
 %.stl: %.scad
