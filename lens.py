@@ -106,7 +106,10 @@ def generate_lens_svg(filename, offset):
         context.restore()
 
 
-def lens_clip(height, width, offset, alpha):
+def lens_clip():
+    height = constants.LENS_GROOVE_HEIGHT
+    offset = constants.SKIRT_THICKNESS-constants.SKIRT_SQUASHED_THICKNESS
+    alpha = math.pi/10
     deltay = constants.LENS_GROOVE_HEIGHT+constants.LENS_TOP_HEIGHT
     deltax = constants.SHELL_MIN_WIDTH+constants.SKIRT_THICKNESS
     shape = mg2.Path(x=constants.SHELL_MIN_WIDTH, y=0)\
@@ -144,7 +147,7 @@ def main():
 
     constants.NSTEPS = args.resolution
     l = lens()
-    lc = lens_clip(constants.LENS_GROOVE_HEIGHT, 2, constants.SKIRT_THICKNESS-constants.SKIRT_SQUASHED_THICKNESS, math.pi/10)
+    lc = lens_clip()
 
     assembly = l + lc
 

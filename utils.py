@@ -5,6 +5,7 @@ import euclid3
 
 import constants
 import ggg
+import mg2
 
 
 def eu3(path):
@@ -44,3 +45,46 @@ def slice(args):
     if args.slice_z is not None:
         cut = cut + solid.translate([-100, -50, args.slice_z])(solid.cube([200, 200, 200]))
     return cut
+
+
+def distance(alpha, threshold=0.5):
+    d = alpha/threshold if alpha < threshold else (1-alpha)/(1-threshold)
+    d = 1-(1-d)**2
+    return d
+
+
+def fwidth(alpha):
+    d = distance(alpha)
+    width = constants.SHELL_MIN_WIDTH+constants.SHELL_MAX_WIDTH*d**7
+    return width
+
+
+def fheight(alpha):
+    d = distance(alpha)
+    height = constants.SHELL_MIN_HEIGHT+constants.SHELL_MAX_HEIGHT*d**15
+    return height
+
+
+def shell_curve(alpha):
+    width = fwidth(alpha)
+    height = fheight(alpha)
+    path = mg2.Path(x=0, y=0)\
+        .append(dx=width*constants.XALPHA, dy=height*constants.YALPHA)\
+        .append(dx=width*(1-constants.XALPHA), dy=height*(1-constants.YALPHA))
+    return path
+
+
+def rounded_square(x, y, height, radius, adjust=False):
+    if adjust:
+        x = x - 2*radius
+        y = y - 2*radius
+    r = solid.cylinder(radius, height, segments=40)
+    o = solid.hull()(
+        solid.translate([-x/2, -y/2, 0])(r),
+        solid.translate([x/2, -y/2, 0])(r),
+        solid.translate([-x/2, y/2, 0])(r),
+        solid.translate([x/2, y/2, 0])(r),
+    )
+    return o
+
+
