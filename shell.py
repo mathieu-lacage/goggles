@@ -173,10 +173,16 @@ def main():
     parser.add_argument('--slice-y', default=None, type=float)
     parser.add_argument('--slice-z', default=None, type=float)
     parser.add_argument('--slice-a', default=None, type=float)
+    parser.add_argument('--top-hole', choices=['1', '2'], default='1')
     args = parser.parse_args()
 
     constants.NSTEPS = args.resolution
-    sh = shell(top_hole1)
+    if args.top_hole == '1':
+        top_hole = top_hole1
+    elif args.top_hole == '2':
+        top_hole = top_hole2
+
+    sh = shell(top_hole)
 
     if args.slice_a is not None or args.slice_x is not None or args.slice_y is not None or args.slice_z is not None:
         cut = utils.slice(args)
