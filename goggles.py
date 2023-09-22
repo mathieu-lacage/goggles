@@ -326,15 +326,12 @@ def main():
     sk = skirt()
     l = lens.lens()
 #    l = solid.translate([-0.2, 0, 0.05])(l)
-    lc = lens.lens_clip()
     bottom_mold, top_mold = skirt_mold()
     #top_mold = solid.translate([0, 0, -0.3])(top_mold)
 
     assembly = sh + sk
     if args.slice_a is not None or args.slice_x is not None or args.slice_y is not None or args.slice_z is not None:
         cut = utils.slice(args)
-        lc = lc - cut
-        sh = sh - cut
         sk = sk - cut
         l = l - cut
         top_mold = top_mold - cut
@@ -342,7 +339,6 @@ def main():
         assembly = assembly - cut
 
     solid.scad_render_to_file(assembly, 'goggles.scad')
-    solid.scad_render_to_file(sh, 'shell.scad')
     solid.scad_render_to_file(sk, 'skirt.scad')
     solid.scad_render_to_file(top_mold, 'top-mold.scad')
     solid.scad_render_to_file(bottom_mold, 'bottom-mold.scad')
