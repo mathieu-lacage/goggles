@@ -28,7 +28,7 @@ lens-clip.scad lens.svg: $(SOURCE)
 back-clip.scad: $(SOURCE)
 	./back-clip.py -r 40
 shell.scad: $(SOURCE)
-	./shell.py -r 40
+	./shell.py -r 40 --top-hole=2
 lens-og.scad: $(SOURCE)
 	./lens-cnc.py -o lens-og --material=pmma --myopia-diopters 2.1
 #	./lens-cnc.py -o lens-og --material=pmma --myopia-diopters 2 --astigmatism-diopters 1.5 --astigmatism-angle=5
