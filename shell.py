@@ -191,4 +191,5 @@ def main():
     solid.scad_render_to_file(sh, 'shell.scad')
 
 
-main()
+if __name__ == '__main__':
+    main()
