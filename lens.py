@@ -26,32 +26,37 @@ def lens():
     #  |               bottom
     #  H---------------------------
     #
-    #  AB=constants.LENS_TOP_HEIGHT (1)
-    #  CD=constants.LENS_GROOVE_HEIGHT (1)
+    #  AB=constants.LENS_TOP_HEIGHT (0.5)
+    #  CD=constants.LENS_GROOVE_HEIGHT (0.5)
     #  BC=DE=constants.LENS_GROOVE_DEPTH (1)
     #  EF=constants.SHELL_THICKNESS+constants.SKIRT_SQUASHED_THICKNESS
     #  GF=constants.LENS_BOTTOM_RING_WIDTH*2/3 (2*2/3)
     #  GH=constants.LENS_BOTTOM_RING_HEIGHT (1)
-    #  Total height: 1+1+1.2+0.4+1=4.6 ??
+    #  Total height: 0.5+1+1.2+0.4+1=4 ??
 
     PADDING = 1
     # start at E
-    shape = mg2.Path(x=-constants.SKIRT_THICKNESS, y=0) \
-        .append(dy=constants.SHELL_THICKNESS+constants.SKIRT_THICKNESS)\
-        .append(dx=constants.LENS_BOTTOM_RING_WIDTH)\
-        .append(dy=constants.LENS_BOTTOM_RING_HEIGHT)\
-        .append(dx=-constants.LENS_BOTTOM_RING_WIDTH-constants.LENS_GROOVE_DEPTH-PADDING)\
+    shape = mg2.Path(x=-constants.SKIRT_THICKNESS+constants.LENS_HORIZONTAL_SQUASHINESS_OFFSET, y=0) \
+        .append(dy=constants.SHELL_THICKNESS+constants.SKIRT_THICKNESS-constants.LENS_VERTICAL_SQUASHINESS_OFFSET-constants.LENS_RADIUS)\
+        .extend_arc(alpha=-math.pi/2, r=constants.LENS_RADIUS)\
+        .append(dx=constants.LENS_BOTTOM_RING_WIDTH-constants.LENS_RADIUS-constants.LENS_RADIUS)\
+        .extend_arc(alpha=math.pi/2, r=constants.LENS_RADIUS)\
+        .append(dy=constants.LENS_BOTTOM_RING_HEIGHT-constants.LENS_RADIUS-constants.LENS_RADIUS)\
+        .extend_arc(alpha=math.pi/2, r=constants.LENS_RADIUS)\
+        .append(dx=-constants.LENS_BOTTOM_RING_WIDTH-constants.LENS_GROOVE_DEPTH-PADDING+constants.LENS_RADIUS)\
         .append(dy=-constants.LENS_HEIGHT)\
         .append(dx=PADDING+constants.LENS_GROOVE_DEPTH)\
-        .append(dy=constants.LENS_TOP_HEIGHT)\
-        .append(dx=-constants.LENS_GROOVE_DEPTH)\
-        .append(dy=constants.LENS_GROOVE_HEIGHT)
+        .append(dy=constants.LENS_TOP_HEIGHT-constants.LENS_RADIUS)\
+        .extend_arc(alpha=math.pi/2, r=constants.LENS_RADIUS)\
+        .append(dx=-constants.LENS_GROOVE_DEPTH-constants.LENS_RADIUS-constants.LENS_RADIUS)\
+        .extend_arc(alpha=-math.pi/2, r=constants.LENS_RADIUS)\
+        .append(dy=constants.LENS_GROOVE_HEIGHT-constants.LENS_RADIUS-constants.LENS_RADIUS)\
+        .extend_arc(alpha=-math.pi/2, r=constants.LENS_RADIUS)\
 
     path = utils.ellipsis_path_delta()
     o = ggg.extrude(list(shape.points)).along_closed_path(path).mesh().solidify()
-    epsilon = 0
-    tmp = utils.ring(constants.LENS_HEIGHT+epsilon*2, -(constants.SKIRT_THICKNESS+constants.LENS_GROOVE_DEPTH+PADDING)+0.3)
-    tmp = solid.translate([0, 0, -(constants.LENS_TOP_HEIGHT+constants.LENS_GROOVE_HEIGHT)-epsilon])(tmp)
+    tmp = utils.ring(constants.LENS_HEIGHT, -(constants.SKIRT_THICKNESS+constants.LENS_GROOVE_DEPTH+PADDING)+0.3)
+    tmp = solid.translate([0, 0, -(constants.LENS_TOP_HEIGHT+constants.LENS_GROOVE_HEIGHT)])(tmp)
     o = o + tmp
     offset = constants.LENS_HEIGHT-(constants.LENS_TOP_HEIGHT+constants.LENS_GROOVE_HEIGHT)
     o = solid.translate([0, 0, -offset])(o)
@@ -117,8 +122,11 @@ def lens_clip():
         .append(dx=-(deltax/2))\
         .splinify()\
         .append(dy=constants.LENS_TOP_HEIGHT)\
-        .append(dx=-constants.LENS_GROOVE_DEPTH)\
-        .append(dy=constants.LENS_GROOVE_HEIGHT)
+        .append(dx=-constants.LENS_GROOVE_DEPTH+constants.LENS_RADIUS)\
+        .extend_arc(alpha=-math.pi/2, r=constants.LENS_RADIUS)\
+        .append(dy=constants.LENS_GROOVE_HEIGHT-constants.LENS_RADIUS-constants.LENS_RADIUS)\
+        .extend_arc(alpha=-math.pi/2, r=constants.LENS_RADIUS)
+
     path = utils.ellipsis_path_delta(offset)
     a = ggg.extrude(list(shape.reversed_points)).along_closed_path(path).mesh().solidify()
     a = solid.translate([0, 0, constants.LENS_TOP_HEIGHT])(a)
