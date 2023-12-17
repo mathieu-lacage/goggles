@@ -325,11 +325,14 @@ def main():
     sh = shell.shell(shell.top_hole2)
     sk = skirt()
     l = lens.lens()
-#    l = solid.translate([-0.2, 0, 0.05])(l)
+    lc = lens.lens_clip(0)
+    l = solid.translate([0, 0, -constants.SHELL_THICKNESS])(l)
+    l = solid.color("grey", 0.5)(l)
+    lc = solid.translate([0, 0, -constants.SHELL_THICKNESS])(lc)
     bottom_mold, top_mold = skirt_mold()
     #top_mold = solid.translate([0, 0, -0.3])(top_mold)
 
-    assembly = sh + sk
+    assembly = sh + sk + l + lc
     if args.slice_a is not None or args.slice_x is not None or args.slice_y is not None or args.slice_z is not None:
         cut = utils.slice(args)
         sk = sk - cut
