@@ -8,8 +8,11 @@ import ggg
 import utils
 import constants
 
+import lens
+
 MATERIAL_PMMA = 'pmma'
 MATERIAL_PC = 'pc'
+MATERIAL_CLEAR_RESIN = 'clear-resin'
 
 
 def diopters_to_radius(diopters, material):
@@ -18,6 +21,8 @@ def diopters_to_radius(diopters, material):
         n2 = 1.49
     elif material == MATERIAL_PC:
         n2 = 1.56
+    elif material == MATERIAL_CLEAR_RESIN:
+        n2 = 1.5304
     else:
         assert False
     n1 = 1  # air
@@ -75,13 +80,13 @@ def astigmatism_correction(d1, d2, d2_angle, material, x_offset=0, y_offset=0):
 
 
 def lens_cnc(correction=None):
-    o = solid.cube([constants.ELLIPSIS_WIDTH*2, constants.ELLIPSIS_HEIGHT*2, constants.LENS_HEIGHT], center=True)
-    o = solid.translate([0, 0, -constants.LENS_HEIGHT/2])(o)
+    o = lens.lens()
+    o = solid.translate([0, 0, -constants.LENS_HEIGHT+(constants.LENS_CLIP_GROOVE_HEIGHT+constants.LENS_TOP_HEIGHT)])(o)
     if correction is not None:
-        tmp = utils.ring(100, -constants.LENS_BOTTOM_RING_WIDTH)
-        tmp = solid.translate([0, 0, -50])(tmp)
-        x = solid.intersection()([tmp, correction])
-        o = o - x
+        #tmp = utils.ring(100, 0)#-constants.LENS_BOTTOM_RING_WIDTH)
+        #tmp = solid.translate([0, 0, -50])(tmp)
+        #x = solid.intersection()([tmp, correction])
+        o = o - correction 
     return o
 
 
@@ -99,7 +104,7 @@ def main():
     parser.add_argument('--astigmatism-angle', default=None, type=float)
     parser.add_argument('--x-offset', default=0, type=float)
     parser.add_argument('--y-offset', default=0, type=float)
-    parser.add_argument('--material', default=MATERIAL_PMMA, choices=[MATERIAL_PMMA, MATERIAL_PC])
+    parser.add_argument('--material', default=MATERIAL_CLEAR_RESIN, choices=[MATERIAL_PMMA, MATERIAL_PC, MATERIAL_CLEAR_RESIN])
     args = parser.parse_args()
 
     constants.NSTEPS = args.resolution
