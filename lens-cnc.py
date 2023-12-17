@@ -14,6 +14,9 @@ MATERIAL_PMMA = 'pmma'
 MATERIAL_PC = 'pc'
 MATERIAL_CLEAR_RESIN = 'clear-resin'
 
+CONCAVE = 'concave'
+CONVEX = 'convex'
+
 
 def diopters_to_radius(diopters, material):
     assert diopters <= 4
@@ -79,14 +82,26 @@ def astigmatism_correction(d1, d2, d2_angle, material, x_offset=0, y_offset=0):
     return o
 
 
-def lens_cnc(correction=None):
+def lens_cnc(type=None, correction=None):
     o = lens.lens()
     o = solid.translate([0, 0, -constants.LENS_HEIGHT+(constants.LENS_CLIP_GROOVE_HEIGHT+constants.LENS_TOP_HEIGHT)])(o)
     if correction is not None:
         #tmp = utils.ring(100, 0)#-constants.LENS_BOTTOM_RING_WIDTH)
         #tmp = solid.translate([0, 0, -50])(tmp)
         #x = solid.intersection()([tmp, correction])
-        o = o - correction 
+        if type == CONCAVE:
+            o = o - correction 
+        elif type == CONVEX:
+            tmp = utils.ring(100, -(constants.SKIRT_THICKNESS-constants.LENS_HORIZONTAL_SQUASHINESS_OFFSET))
+            tmp = solid.translate([0, 0, -100/2])(tmp)
+            correction= solid.intersection()([tmp, correction])
+            tmp = solid.cube([100, 100, 100], center=True)
+            tmp = solid.translate([0, 0, -100/2])(tmp)
+            tmp = solid.translate([0, 0, constants.LENS_TOP_HEIGHT])(tmp)
+            correction= solid.intersection()([tmp, correction])
+            correction = solid.translate([0, 0, -constants.LENS_HEIGHT])(correction)
+            o = o + correction
+#            o = correction
     return o
 
 
@@ -104,6 +119,7 @@ def main():
     parser.add_argument('--astigmatism-angle', default=None, type=float)
     parser.add_argument('--x-offset', default=0, type=float)
     parser.add_argument('--y-offset', default=0, type=float)
+    parser.add_argument('--type', default=None, choices=[None, CONCAVE, CONVEX])
     parser.add_argument('--material', default=MATERIAL_CLEAR_RESIN, choices=[MATERIAL_PMMA, MATERIAL_PC, MATERIAL_CLEAR_RESIN])
     args = parser.parse_args()
 
@@ -116,7 +132,7 @@ def main():
         x_offset=args.x_offset,
         y_offset=args.y_offset
     )
-    lens = lens_cnc(correction=correction)
+    lens = lens_cnc(type=args.type, correction=correction)
 
     if args.slice_a is not None or args.slice_x is not None or args.slice_y is not None or args.slice_z is not None:
         cut = utils.slice(args)
