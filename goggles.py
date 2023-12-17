@@ -322,7 +322,7 @@ def main():
     args = parser.parse_args()
 
     constants.NSTEPS = args.resolution
-    sh = shell.shell(shell.top_hole1)
+    sh = shell.shell(shell.top_hole2)
     sk = skirt()
     l = lens.lens()
 #    l = solid.translate([-0.2, 0, 0.05])(l)
